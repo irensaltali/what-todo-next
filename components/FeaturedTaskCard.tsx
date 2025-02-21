@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns'; // for date formatting
+import { format } from 'date-fns';
 
 interface FeaturedTaskCardProps {
   taskTitle: string;
@@ -18,31 +18,48 @@ const FeaturedTaskCard: React.FC<FeaturedTaskCardProps> = ({
   deadline,
   onFocusPress,
 }) => {
-  const truncatedDescription = taskDescription.length > 80 ? taskDescription.substring(0, 80) + '...' : taskDescription;
-  const visibleCategories = categories.slice(0, 3); // Show max 3 categories
+  const truncatedDescription = taskDescription.length > 80 
+    ? taskDescription.substring(0, 80) + '...' 
+    : taskDescription;
+  const visibleCategories = categories.slice(0, 3);
 
   return (
     <View style={styles.cardContainer}>
-      <View style={styles.contentContainer}>
-        <Text style={styles.taskTitle}>{taskTitle}</Text>
-        <Text style={styles.taskDescription}>{truncatedDescription}</Text>
-
-        <View style={styles.categoriesContainer}>
-          {visibleCategories.map((category, index) => (
-            <View key={index} style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{category}</Text>
-            </View>
-          ))}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.featuredLabel}>Featured Task</Text>
+          <Text style={styles.taskTitle}>{taskTitle}</Text>
         </View>
+        <View style={styles.priorityBadge}>
+          <Ionicons name="star" size={12} color="#fff" />
+          <Text style={styles.priorityText}>Priority</Text>
+        </View>
+      </View>
 
-        <View style={styles.footer}>
+      <Text style={styles.taskDescription}>{truncatedDescription}</Text>
+
+      <View style={styles.categoriesContainer}>
+        {visibleCategories.map((category, index) => (
+          <View key={index} style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>{category}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.footer}>
+        <View style={styles.deadlineContainer}>
+          <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
           <Text style={styles.deadlineText}>
-            Deadline: {format(deadline, 'MMM dd, yyyy')}
+            {format(deadline, 'MMM d, yyyy')}
           </Text>
-          <TouchableOpacity style={styles.focusButton} onPress={onFocusPress}>
-            <Text style={styles.focusButtonText}>Focus</Text>
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity 
+          style={styles.focusButton} 
+          onPress={onFocusPress}
+        >
+          <Ionicons name="flash-outline" size={16} color="#fff" />
+          <Text style={styles.focusButtonText}>Focus</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -50,74 +67,108 @@ const FeaturedTaskCard: React.FC<FeaturedTaskCardProps> = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#F26E56',
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 4,
     elevation: 2,
   },
-  contentContainer: {
-    paddingBottom: 16, // Space before the footer
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  featuredLabel: {
+    fontSize: 12,
+    color: '#FF9F1C',
+    fontWeight: '600',
+    marginBottom: 4,
   },
   taskTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
+    color: '#1C1C1E',
+  },
+  priorityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9F1C',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  priorityText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
   },
   taskDescription: {
     fontSize: 14,
-    color: '#000',
-    marginBottom: 12,
+    color: '#8E8E93',
+    marginBottom: 16,
+    lineHeight: 20,
   },
   categoriesContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // Allow categories to wrap to the next line
-    marginBottom: 12,
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 8,
   },
   categoryBadge: {
-    backgroundColor: '#52C1C4', // Light gray badge
-    borderRadius: 10,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    marginRight: 8,
-    marginBottom: 4,
   },
   categoryText: {
     fontSize: 12,
-    color: '#000',
+    color: '#8E8E93',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 8,
+    borderTopColor: '#E5E5EA',
+  },
+  deadlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   deadlineText: {
     fontSize: 12,
-    color: '#111',
+    color: '#8E8E93',
   },
   focusButton: {
-    backgroundColor: '#FFC247', 
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9F1C',
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    gap: 4,
   },
   focusButtonText: {
-    color: '#111',
-    fontWeight: 'bold',
+    color: '#fff',
+    fontWeight: '600',
     fontSize: 14,
   },
 });
 
-export default FeaturedTaskCard;
+export default FeaturedTaskCard

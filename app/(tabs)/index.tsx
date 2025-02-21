@@ -45,11 +45,11 @@ const STATUS_COUNTS = {
   completed: 42,
 };
 
-const featuresTaskData = {
+const featuredTaskData = {
   taskTitle: 'Design New Landing Page',
-  taskDescription: 'Create a visually appealing and user-friendly landing page for our new product launch.  Focus on a clean design that converts visitors.',
+  taskDescription: 'Create a visually appealing and user-friendly landing page for our new product launch. Focus on a clean design that converts visitors.',
   categories: ['Design', 'UI/UX', 'Web'],
-  deadline: new Date(2024, 4, 30), // May 30, 2024 (month is 0-indexed)
+  deadline: new Date(2024, 4, 30), // May 30, 2024
 };
 
 export default function HomeScreen() {
@@ -124,7 +124,7 @@ export default function HomeScreen() {
 
   const handleFocusPress = () => {
     console.log('Focus button pressed');
-    // Add any additional logic you need here
+    // Add focus mode logic here
   };
 
   const StatusCard = ({ status, count, color, iconColor }: { status: string; count: number; color: string; iconColor: string }) => (
@@ -199,15 +199,15 @@ export default function HomeScreen() {
             <Ionicons name="settings-outline" size={24} color="#1C1C1E" />
           </Pressable>
         </View>
-        <View>
-          <FeaturedTaskCard
-            taskTitle={featuresTaskData.taskTitle}
-            taskDescription={featuresTaskData.taskDescription}
-            categories={featuresTaskData.categories}
-            deadline={featuresTaskData.deadline}
-            onFocusPress={handleFocusPress}
-          />
-        </View>
+
+        <FeaturedTaskCard
+          taskTitle={featuredTaskData.taskTitle}
+          taskDescription={featuredTaskData.taskDescription}
+          categories={featuredTaskData.categories}
+          deadline={featuredTaskData.deadline}
+          onFocusPress={handleFocusPress}
+        />
+
         <View style={styles.statusGrid}>
           {Object.entries(STATUS_COUNTS).map(([status, count]) => (
             <StatusCard
