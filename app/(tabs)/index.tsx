@@ -7,6 +7,7 @@ import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { StatusBar } from '../../components/StatusBar';
+import FeaturedTaskCard from '../../components/FeaturedTaskCard';
 
 interface Task {
   id: string;
@@ -42,6 +43,13 @@ const STATUS_COUNTS = {
   inprocess: 12,
   canceled: 8,
   completed: 42,
+};
+
+const featuresTaskData = {
+  taskTitle: 'Design New Landing Page',
+  taskDescription: 'Create a visually appealing and user-friendly landing page for our new product launch.  Focus on a clean design that converts visitors.',
+  categories: ['Design', 'UI/UX', 'Web'],
+  deadline: new Date(2024, 4, 30), // May 30, 2024 (month is 0-indexed)
 };
 
 export default function HomeScreen() {
@@ -114,6 +122,11 @@ export default function HomeScreen() {
     router.push(`/(tabs)/${taskId}`);
   };
 
+  const handleFocusPress = () => {
+    console.log('Focus button pressed');
+    // Add any additional logic you need here
+  };
+
   const StatusCard = ({ status, count, color, iconColor }: { status: string; count: number; color: string; iconColor: string }) => (
     <View style={[styles.statusCard, { backgroundColor: color }]}>
       <View style={styles.statusContent}>
@@ -123,10 +136,10 @@ export default function HomeScreen() {
               status === 'ongoing'
                 ? 'time-outline'
                 : status === 'inprocess'
-                ? 'reload-outline'
-                : status === 'canceled'
-                ? 'close-outline'
-                : 'checkmark-outline'
+                  ? 'reload-outline'
+                  : status === 'canceled'
+                    ? 'close-outline'
+                    : 'checkmark-outline'
             }
             size={32}
             color="#fff"
@@ -141,7 +154,7 @@ export default function HomeScreen() {
   );
 
   const TaskCard = ({ task }: { task: Task }) => (
-    <Pressable 
+    <Pressable
       style={styles.taskCard}
       onPress={() => handleTaskPress(task.id)}
     >
@@ -186,7 +199,15 @@ export default function HomeScreen() {
             <Ionicons name="settings-outline" size={24} color="#1C1C1E" />
           </Pressable>
         </View>
-
+        <View>
+          <FeaturedTaskCard
+            taskTitle={featuresTaskData.taskTitle}
+            taskDescription={featuresTaskData.taskDescription}
+            categories={featuresTaskData.categories}
+            deadline={featuresTaskData.deadline}
+            onFocusPress={handleFocusPress}
+          />
+        </View>
         <View style={styles.statusGrid}>
           {Object.entries(STATUS_COUNTS).map(([status, count]) => (
             <StatusCard
