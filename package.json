@@ -14,6 +14,7 @@
     "@react-native-community/datetimepicker": "7.6.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
+    "@shopify/flash-list": "1.6.3",
     "@supabase/supabase-js": "^2.39.3",
     "date-fns": "^3.3.1",
     "expo": "52.0.33",
@@ -43,7 +44,6 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "^0.19.13",
     "react-native-webview": "13.12.5",
-    "@shopify/flash-list": "1.6.3",
     "recharts": "^2.12.0"
   },
   "devDependencies": {

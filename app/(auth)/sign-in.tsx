@@ -51,6 +51,30 @@ export default function SignInScreen() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
@@ -132,18 +156,13 @@ export default function SignInScreen() {
       <Animated.View
         style={styles.socialButtons}
         entering={FadeInDown.delay(500).springify()}>
-        <Pressable style={styles.socialButton}>
+        <Pressable 
+          style={styles.socialButton}
+          onPress={handleGoogleSignIn}
+          disabled={loading}
+        >
           <Image
             source={{ uri: 'https://www.google.com/favicon.ico' }}
-            style={styles.socialIcon}
-          />
-        </Pressable>
-        <Pressable style={styles.socialButton}>
-          <Ionicons name="logo-apple" size={24} color="#000" />
-        </Pressable>
-        <Pressable style={styles.socialButton}>
-          <Image
-            source={{ uri: 'https://www.facebook.com/favicon.ico' }}
             style={styles.socialIcon}
           />
         </Pressable>

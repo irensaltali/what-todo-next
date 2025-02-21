@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -79,6 +80,29 @@ export default function SignUpScreen() {
 
         router.replace('/(tabs)');
       }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: Platform.select({
+            web: window.location.origin,
+            default: 'your.scheme://google-auth',
+          }),
+        },
+      });
+
+      if (error) throw error;
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -191,18 +215,13 @@ export default function SignUpScreen() {
       <Animated.View
         style={styles.socialButtons}
         entering={FadeInDown.delay(500).springify()}>
-        <Pressable style={styles.socialButton}>
+        <Pressable 
+          style={styles.socialButton}
+          onPress={handleGoogleSignUp}
+          disabled={loading}
+        >
           <Image
             source={{ uri: 'https://www.google.com/favicon.ico' }}
-            style={styles.socialIcon}
-          />
-        </Pressable>
-        <Pressable style={styles.socialButton}>
-          <Ionicons name="logo-apple" size={24} color="#000" />
-        </Pressable>
-        <Pressable style={styles.socialButton}>
-          <Image
-            source={{ uri: 'https://www.facebook.com/favicon.ico' }}
             style={styles.socialIcon}
           />
         </Pressable>

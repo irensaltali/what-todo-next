@@ -1,4 +1,3 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -109,7 +108,7 @@ export default function TasksScreen() {
 
       <View style={styles.taskFooter}>
         <View style={styles.taskDate}>
-          <Ionicons name="list-outline" size={16} color="#8E8E93" />
+          <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
           <Text style={styles.dateText}>
             {format(new Date(task.start_time), 'MMM d, yyyy')}
           </Text>

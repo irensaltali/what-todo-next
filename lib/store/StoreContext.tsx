@@ -7,16 +7,13 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const CACHE_KEY = 'app_cache';
 
 const initialState: StoreState = {
-  notes: { data: [], timestamp: 0, error: null },
   tasks: { data: [], timestamp: 0, error: null },
   profile: { data: null, timestamp: 0, error: null },
   loading: {
-    notes: false,
     tasks: false,
     profile: false,
   },
   error: {
-    notes: null,
     tasks: null,
     profile: null,
   },
@@ -69,7 +66,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Save cache to AsyncStorage whenever it changes
   React.useEffect(() => {
     saveCache();
-  }, [state.notes, state.tasks, state.profile]);
+  }, [state.tasks, state.profile]);
 
   const loadCache = async () => {
     try {
@@ -92,7 +89,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const saveCache = async () => {
     try {
       const cache: CacheState = {
-        notes: state.notes,
         tasks: state.tasks,
         profile: state.profile,
       };
@@ -116,16 +112,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       let data;
       switch (resource) {
-        case 'notes':
-          const { data: notes, error: notesError } = await supabase
-            .from('notes')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('updated_at', { ascending: false });
-          if (notesError) throw notesError;
-          data = notes;
-          break;
-
         case 'tasks':
           const { data: tasks, error: tasksError } = await supabase
             .from('tasks')
