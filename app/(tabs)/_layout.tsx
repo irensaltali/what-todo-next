@@ -1,3 +1,4 @@
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Pressable } from 'react-native';
@@ -47,11 +48,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="calendar"
+        name="list"
         options={{
-          title: 'Calendar',
+          title: 'Tasks',
           tabBarIcon: ({ size, color }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+            <Ionicons name="list-outline" size={size} color={color} />
           ),
         }}
       />

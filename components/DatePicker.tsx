@@ -60,7 +60,7 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
         style={[styles.container, error && styles.containerError]}
         onPress={openPicker}
       >
-        <Ionicons name="calendar-outline" size={20} color="#8E8E93" />
+        <Ionicons name="list-outline" size={20} color="#8E8E93" />
         <Text style={styles.dateText}>
           {format(date, 'MMMM d, yyyy')}
         </Text>

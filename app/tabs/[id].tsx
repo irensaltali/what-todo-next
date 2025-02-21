@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -344,7 +345,7 @@ export default function TaskDetailsScreen() {
 
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#8E8E93" />
+            <Ionicons name="list-outline" size={20} color="#8E8E93" />
             {editableFields.start_time ? (
               <View style={styles.editableDate}>
                 <DatePicker

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Stack } from 'expo-router';
 import { useAuth } from '../../lib/useAuth';
 import { Redirect } from 'expo-router';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,16 +42,6 @@ const STATUS_COUNTS = {
   inprocess: 12,
   canceled: 8,
   completed: 42,
-};
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-
-const FEATURED_TASK = {
-  id: 'featured-1',
-  title: 'Website Redesign Project',
-  description: 'Complete overhaul of the company website with modern design principles and improved user experience.',
-  progress: 75,
-  dueDate: '2025-03-01',
 };
 
 export default function HomeScreen() {
@@ -180,35 +170,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.featuredCard}>
-        <View style={styles.featuredContent}>
-          <Text style={styles.featuredTitle}>{FEATURED_TASK.title}</Text>
-          <Text style={styles.featuredDescription}>{FEATURED_TASK.description}</Text>
-          <View style={styles.featuredProgress}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: `${FEATURED_TASK.progress}%` }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressPercentage}>{FEATURED_TASK.progress}%</Text>
-          </View>
-          <View style={styles.featuredActions}>
-            <Pressable style={[styles.actionButton, styles.completeButton]}>
-              <Text style={styles.actionButtonText}>Completed</Text>
-            </Pressable>
-            <Pressable style={[styles.actionButton, styles.detailsButton]}>
-              <Text style={styles.actionButtonText}>Details</Text>
-            </Pressable>
-            <Pressable style={[styles.actionButton, styles.iconButton]}>
-              <Ionicons name="expand-outline" size={20} color="#fff" />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
       <View style={[styles.content, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -258,85 +219,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F6F6',
   },
-  featuredCard: {
-    height: SCREEN_HEIGHT / 3,
-    backgroundColor: '#000',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  featuredContent: {
-    flex: 1,
-    padding: 24,
-    justifyContent: 'flex-end',
-  },
-  featuredTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  featuredDescription: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.8,
-    marginBottom: 16,
-  },
-  featuredProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 2,
-  },
-  progressPercentage: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  featuredActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  completeButton: {
-    backgroundColor: '#34C759',
-  },
-  detailsButton: {
-    flex: 1,
-  },
-  iconButton: {
-    width: 40,
-    paddingHorizontal: 0,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
   content: {
     flex: 1,
-    marginTop: SCREEN_HEIGHT / 3,
   },
   header: {
     flexDirection: 'row',
