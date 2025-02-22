@@ -1,5 +1,5 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "what-to-do-next",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
@@ -12,6 +12,7 @@
     "@expo/vector-icons": "^14.0.2",
     "@react-native-async-storage/async-storage": "^1.22.2",
     "@react-native-community/datetimepicker": "7.6.1",
+    "@react-native-google-signin/google-signin": "^13.2.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@shopify/flash-list": "1.6.3",
@@ -47,6 +48,7 @@
     "recharts": "^2.12.0"
   },
   "devDependencies": {
+    "@react-native-community/cli": "latest",
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
     "typescript": "^5.3.3"
