@@ -8,7 +8,6 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,29 +79,6 @@ export default function SignUpScreen() {
 
         router.replace('/(tabs)');
       }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: Platform.select({
-            web: window.location.origin,
-            default: 'your.scheme://google-auth',
-          }),
-        },
-      });
-
-      if (error) throw error;
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -201,29 +177,6 @@ export default function SignUpScreen() {
           ) : (
             <Text style={styles.buttonText}>Continue</Text>
           )}
-        </Pressable>
-      </Animated.View>
-
-      <Animated.View
-        style={styles.divider}
-        entering={FadeInDown.delay(400).springify()}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or continue with</Text>
-        <View style={styles.dividerLine} />
-      </Animated.View>
-
-      <Animated.View
-        style={styles.socialButtons}
-        entering={FadeInDown.delay(500).springify()}>
-        <Pressable 
-          style={styles.socialButton}
-          onPress={handleGoogleSignUp}
-          disabled={loading}
-        >
-          <Image
-            source={{ uri: 'https://www.google.com/favicon.ico' }}
-            style={styles.socialIcon}
-          />
         </Pressable>
       </Animated.View>
 
@@ -334,43 +287,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 32,
-    gap: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E5EA',
-  },
-  dividerText: {
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 32,
-  },
-  socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialIcon: {
-    width: 24,
-    height: 24,
-  },
   footer: {
     fontSize: 14,
     color: '#8E8E93',
     textAlign: 'center',
+    marginTop: 32,
   },
   footerLink: {
     color: '#FF9F1C',
