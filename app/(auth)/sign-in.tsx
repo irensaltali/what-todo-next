@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { supabase } from '../../lib/supabase';
 import { StatusBar } from '../../components/StatusBar';
+import GoogleSignIn from '../../components/Auth.native';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
@@ -51,32 +53,8 @@ export default function SignInScreen() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) throw error;
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <ScrollView
+    <ScrollView 
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
@@ -156,16 +134,37 @@ export default function SignInScreen() {
       <Animated.View
         style={styles.socialButtons}
         entering={FadeInDown.delay(500).springify()}>
-        <Pressable 
-          style={styles.socialButton}
-          onPress={handleGoogleSignIn}
-          disabled={loading}
-        >
-          <Image
-            source={{ uri: 'https://www.google.com/favicon.ico' }}
-            style={styles.socialIcon}
-          />
-        </Pressable>
+        {Platform.OS !== 'web' && <GoogleSignIn />}
+        {Platform.OS === 'web' && (
+          <Pressable 
+            style={styles.socialButton}
+            onPress={async () => {
+              try {
+                setLoading(true);
+                setError(null);
+
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'google',
+                  options: {
+                    redirectTo: window.location.origin,
+                  }
+                });
+
+                if (error) throw error;
+              } catch (err: any) {
+                setError(err.message);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+          >
+            <Image
+              source={{ uri: 'https://www.google.com/favicon.ico' }}
+              style={styles.socialIcon}
+            />
+          </Pressable>
+        )}
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(600).springify()}>
