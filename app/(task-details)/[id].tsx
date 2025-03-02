@@ -4,7 +4,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { format, isAfter, startOfDay } from 'date-fns';
+import { format, isAfter, startOfDay, differenceInDays, addDays } from 'date-fns';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { DatePicker } from '../../components/DatePicker';
 import { StatusBar } from '../../components/StatusBar';
@@ -18,6 +18,10 @@ interface Task {
   progress: number;
   status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
   start_time: string;
+  deadline?: string;
+  value_impact?: number;
+  difficulty?: number;
+  priority_score?: number;
   tags: string[];
   alert_enabled: boolean;
 }
@@ -29,6 +33,9 @@ interface EditableFields {
   tags: boolean;
   progress: boolean;
   start_time: boolean;
+  deadline: boolean;
+  value_impact: boolean;
+  difficulty: boolean;
 }
 
 const STATUS_COLORS = {
@@ -59,6 +66,9 @@ export default function TaskDetailsScreen() {
     tags: false,
     progress: false,
     start_time: false,
+    deadline: false,
+    value_impact: false,
+    difficulty: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,6 +105,31 @@ export default function TaskDetailsScreen() {
     }
   };
 
+  const calculatePriority = (taskData: Partial<Task>) => {
+    // Use task data or edited task data
+    const valueImpact = taskData.value_impact ?? task?.value_impact ?? 50;
+    const difficulty = taskData.difficulty ?? task?.difficulty ?? 5;
+    const deadlineDate = taskData.deadline ? new Date(taskData.deadline) : 
+                         (task?.deadline ? new Date(task.deadline) : addDays(new Date(), 7));
+    
+    // Calculate deadline score (higher for closer deadlines)
+    const today = startOfDay(new Date());
+    const daysUntilDeadline = Math.max(0, differenceInDays(deadlineDate, today));
+    const maxDays = 365;
+    const deadlineScore = 100 - Math.min(100, (daysUntilDeadline / maxDays) * 100);
+    
+    // Value impact is already on a 1-100 scale
+    const valueScore = valueImpact;
+    
+    // Convert difficulty (1-10) to a 1-100 scale
+    const difficultyScore = (difficulty / 10) * 100;
+    
+    // Calculate priority score (weighted average)
+    const priorityScore = (deadlineScore * 0.4) + (valueScore * 0.4) + ((100 - difficultyScore) * 0.2);
+    
+    return Math.round(priorityScore);
+  };
+
   const validateField = (field: keyof Task, value: any): string | null => {
     switch (field) {
       case 'title':
@@ -115,6 +150,22 @@ export default function TaskDetailsScreen() {
         if (isNaN(date.getTime())) return 'Invalid date';
         if (isAfter(startOfDay(new Date()), startOfDay(date))) {
           return 'Date cannot be in the past';
+        }
+        break;
+      case 'deadline':
+        const deadline = new Date(value);
+        if (isNaN(deadline.getTime())) return 'Invalid deadline';
+        break;
+      case 'value_impact':
+        const impact = Number(value);
+        if (isNaN(impact) || impact < 1 || impact > 100) {
+          return 'Value impact must be between 1 and 100';
+        }
+        break;
+      case 'difficulty':
+        const difficulty = Number(value);
+        if (isNaN(difficulty) || difficulty < 1 || difficulty > 10) {
+          return 'Difficulty must be between 1 and 10';
         }
         break;
     }
@@ -139,7 +190,7 @@ export default function TaskDetailsScreen() {
   const handleSave = async (field: keyof EditableFields) => {
     if (!task || !editedTask) return;
 
-    const validationError = validateField(field, editedTask[field]);
+    const validationError = validateField(field as keyof Task, editedTask[field as keyof Task]);
     if (validationError) {
       Alert.alert('Validation Error', validationError);
       return;
@@ -149,14 +200,21 @@ export default function TaskDetailsScreen() {
       setSaving(true);
       setError(null);
 
+      // If we're updating a priority-related field, recalculate the priority score
+      let updates: any = { [field]: editedTask[field as keyof Task] };
+      
+      if (field === 'deadline' || field === 'value_impact' || field === 'difficulty') {
+        updates.priority_score = calculatePriority(editedTask);
+      }
+
       const { error: updateError } = await supabase
         .from('tasks')
-        .update({ [field]: editedTask[field] })
+        .update(updates)
         .eq('id', task.id);
 
       if (updateError) throw updateError;
 
-      setTask(prev => prev ? { ...prev, [field]: editedTask[field] } : null);
+      setTask(prev => prev ? { ...prev, ...updates } : null);
       setEditableFields(prev => ({ ...prev, [field]: false }));
     } catch (err: any) {
       setError('Failed to update task: ' + err.message);
@@ -379,12 +437,182 @@ export default function TaskDetailsScreen() {
                 onPress={() => handleEdit('start_time')}
               >
                 <Text style={styles.infoText}>
-                  {format(new Date(task.start_time), 'MMMM d, yyyy')}
+                  Start: {format(new Date(task.start_time), 'MMM d, yyyy')}
                 </Text>
                 <Ionicons name="pencil" size={20} color="#8E8E93" />
               </Pressable>
             )}
           </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="time-outline" size={20} color="#8E8E93" />
+            {editableFields.deadline ? (
+              <View style={styles.editableDate}>
+                <DatePicker
+                  date={new Date(editedTask.deadline || task.deadline || addDays(new Date(), 7))}
+                  onDateChange={(date) => handleChange('deadline', date.toISOString())}
+                />
+                <View style={styles.editActions}>
+                  <Pressable
+                    style={[styles.editButton, styles.cancelButton]}
+                    onPress={() => handleCancel('deadline')}
+                    disabled={saving}
+                  >
+                    <Ionicons name="close" size={20} color="#FF3B30" />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editButton, styles.saveButton]}
+                    onPress={() => handleSave('deadline')}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.editableText}
+                onPress={() => handleEdit('deadline')}
+              >
+                <Text style={styles.infoText}>
+                  Deadline: {task.deadline ? format(new Date(task.deadline), 'MMM d, yyyy') : 'Not set'}
+                </Text>
+                <Ionicons name="pencil" size={20} color="#8E8E93" />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="diamond-outline" size={20} color="#8E8E93" />
+            {editableFields.value_impact ? (
+              <View style={styles.editableField}>
+                <View style={styles.sliderContainer}>
+                  <TextInput
+                    style={styles.valueInput}
+                    value={String(editedTask.value_impact || task.value_impact || 50)}
+                    onChangeText={(value) => {
+                      const numValue = parseInt(value);
+                      if (!isNaN(numValue)) {
+                        handleChange('value_impact', Math.max(1, Math.min(100, numValue)));
+                      }
+                    }}
+                    keyboardType="numeric"
+                    maxLength={3}
+                  />
+                  <Text style={styles.valueLabel}>/100</Text>
+                </View>
+                <View style={styles.editActions}>
+                  <Pressable
+                    style={[styles.editButton, styles.cancelButton]}
+                    onPress={() => handleCancel('value_impact')}
+                    disabled={saving}
+                  >
+                    <Ionicons name="close" size={20} color="#FF3B30" />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editButton, styles.saveButton]}
+                    onPress={() => handleSave('value_impact')}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.editableText}
+                onPress={() => handleEdit('value_impact')}
+              >
+                <Text style={styles.infoText}>
+                  Value Impact: {task.value_impact || 50}/100
+                </Text>
+                <Ionicons name="pencil" size={20} color="#8E8E93" />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.infoRow}>
+            <Ionicons name="hammer-outline" size={20} color="#8E8E93" />
+            {editableFields.difficulty ? (
+              <View style={styles.editableField}>
+                <View style={styles.sliderContainer}>
+                  <TextInput
+                    style={styles.valueInput}
+                    value={String(editedTask.difficulty || task.difficulty || 5)}
+                    onChangeText={(value) => {
+                      const numValue = parseInt(value);
+                      if (!isNaN(numValue)) {
+                        handleChange('difficulty', Math.max(1, Math.min(10, numValue)));
+                      }
+                    }}
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                  <Text style={styles.valueLabel}>/10</Text>
+                </View>
+                <View style={styles.editActions}>
+                  <Pressable
+                    style={[styles.editButton, styles.cancelButton]}
+                    onPress={() => handleCancel('difficulty')}
+                    disabled={saving}
+                  >
+                    <Ionicons name="close" size={20} color="#FF3B30" />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editButton, styles.saveButton]}
+                    onPress={() => handleSave('difficulty')}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.editableText}
+                onPress={() => handleEdit('difficulty')}
+              >
+                <Text style={styles.infoText}>
+                  Difficulty: {task.difficulty || 5}/10
+                </Text>
+                <Ionicons name="pencil" size={20} color="#8E8E93" />
+              </Pressable>
+            )}
+          </View>
+
+          {task.priority_score !== undefined && (
+            <View style={styles.infoRow}>
+              <Ionicons name="star-outline" size={20} color="#8E8E93" />
+              <View style={styles.priorityContainer}>
+                <Text style={styles.infoText}>
+                  Priority Score: {task.priority_score}/100
+                </Text>
+                <View style={styles.priorityBar}>
+                  <View 
+                    style={[
+                      styles.priorityFill, 
+                      { width: `${task.priority_score}%` },
+                      task.priority_score < 40 ? styles.lowPriority :
+                      task.priority_score < 70 ? styles.mediumPriority :
+                      styles.highPriority
+                    ]} 
+                  />
+                </View>
+              </View>
+            </View>
+          )}
 
           <View style={styles.infoRow}>
             <Ionicons name="folder-outline" size={20} color="#8E8E93" />
@@ -422,7 +650,7 @@ export default function TaskDetailsScreen() {
                 style={styles.editableText}
                 onPress={() => handleEdit('type')}
               >
-                <Text style={styles.infoText}>{task.type}</Text>
+                <Text style={styles.infoText}>Type: {task.type || 'Not specified'}</Text>
                 <Ionicons name="pencil" size={20} color="#8E8E93" />
               </Pressable>
             )}
@@ -674,7 +902,7 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   infoText: {
     flex: 1,
@@ -726,6 +954,50 @@ const styles = StyleSheet.create({
   editableDate: {
     flex: 1,
     marginLeft: 12,
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 8,
+  },
+  valueInput: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1C1C1E',
+    width: 40,
+    textAlign: 'right',
+  },
+  valueLabel: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginLeft: 4,
+  },
+  priorityContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  priorityBar: {
+    height: 8,
+    backgroundColor: '#E5E5EA',
+    borderRadius: 4,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  priorityFill: {
+    height: '100%',
+    backgroundColor: '#FF9F1C',
+  },
+  lowPriority: {
+    backgroundColor: '#5593F1',
+  },
+  mediumPriority: {
+    backgroundColor: '#FFC247',
+  },
+  highPriority: {
+    backgroundColor: '#FF6B00',
   },
   toggleContainer: {
     flex: 1,

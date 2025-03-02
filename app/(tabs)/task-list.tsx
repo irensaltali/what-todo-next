@@ -86,7 +86,7 @@ export default function TasksScreen() {
               <Text style={styles.statusText}>{STATUS_LABELS[task.status]}</Text>
             </View>
             <View style={styles.taskDate}>
-              <Ionicons name="task-list-outline" size={12} color="#8E8E93" />
+              <Ionicons name="calendar-outline" size={12} color="#8E8E93" />
               <Text style={styles.dateText}>
                 {format(new Date(task.start_time), 'MMM d, yyyy')}
               </Text>
