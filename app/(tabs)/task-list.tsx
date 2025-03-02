@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -80,14 +80,22 @@ export default function TasksScreen() {
     >
       <View style={styles.taskHeader}>
         <View style={styles.taskTitleContainer}>
-          <Text style={styles.taskTitle}>{task.title}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[task.status] }]}>
-            <Text style={styles.statusText}>{STATUS_LABELS[task.status]}</Text>
+          <Text style={styles.taskTitle} numberOfLines={1} ellipsizeMode="tail">{task.title}</Text>
+          <View style={styles.taskMeta}>
+            <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[task.status] }]}>
+              <Text style={styles.statusText}>{STATUS_LABELS[task.status]}</Text>
+            </View>
+            <View style={styles.taskDate}>
+              <Ionicons name="task-list-outline" size={12} color="#8E8E93" />
+              <Text style={styles.dateText}>
+                {format(new Date(task.start_time), 'MMM d, yyyy')}
+              </Text>
+            </View>
           </View>
         </View>
         <AnimatedCircularProgress
-          size={40}
-          width={4}
+          size={36}
+          width={3}
           fill={task.progress || 0}
           tintColor={STATUS_COLORS[task.status]}
           backgroundColor="#E2E2E2"
@@ -101,32 +109,24 @@ export default function TasksScreen() {
       </View>
 
       {task.description && (
-        <Text style={styles.taskDescription} numberOfLines={2}>
+        <Text style={styles.taskDescription} numberOfLines={1} ellipsizeMode="tail">
           {task.description}
         </Text>
       )}
 
-      <View style={styles.taskFooter}>
-        <View style={styles.taskDate}>
-          <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
-          <Text style={styles.dateText}>
-            {format(new Date(task.start_time), 'MMM d, yyyy')}
-          </Text>
-        </View>
-        {task.tags && task.tags.length > 0 && (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagsContainer}
-          >
-            {task.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-      </View>
+      {task.tags && task.tags.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.tagsContainer}
+        >
+          {task.tags.map((tag, index) => (
+            <View key={index} style={styles.tag}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </Pressable>
   );
 
@@ -271,12 +271,12 @@ const styles = StyleSheet.create({
   },
   tasksContent: {
     padding: 16,
-    gap: 16,
+    gap: 12, // Reduced gap between task cards
   },
   taskCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 12, // Reduced padding
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -287,38 +287,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8, // Reduced margin
   },
   taskTitleContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: 12,
   },
   taskTitle: {
-    fontSize: 18,
+    fontSize: 16, // Reduced font size
     fontWeight: '600',
     color: '#1C1C1E',
-    marginBottom: 8,
+    marginBottom: 4, // Reduced margin
+  },
+  taskMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   statusBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8, // Reduced padding
+    paddingVertical: 2, // Reduced padding
+    borderRadius: 8, // Reduced border radius
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10, // Reduced font size
     color: '#fff',
     fontWeight: '600',
   },
   progressText: {
-    fontSize: 10,
+    fontSize: 9, // Reduced font size
     fontWeight: 'bold',
     color: '#1C1C1E',
   },
   taskDescription: {
-    fontSize: 14,
+    fontSize: 12, // Reduced font size
     color: '#8E8E93',
-    marginBottom: 12,
+    marginBottom: 8, // Reduced margin
   },
   taskFooter: {
     flexDirection: 'row',
@@ -330,22 +336,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 10, // Reduced font size
     color: '#8E8E93',
   },
   tagsContainer: {
-    flex: 1,
-    marginLeft: 12,
+    maxHeight: 24, // Limited height
   },
   tag: {
     backgroundColor: '#F2F2F7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginRight: 8,
+    paddingHorizontal: 6, // Reduced padding
+    paddingVertical: 2, // Reduced padding
+    borderRadius: 6, // Reduced border radius
+    marginRight: 6, // Reduced margin
   },
   tagText: {
-    fontSize: 12,
+    fontSize: 10, // Reduced font size
     color: '#8E8E93',
   },
   emptyState: {
