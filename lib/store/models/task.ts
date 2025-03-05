@@ -8,6 +8,9 @@ export interface Task {
   progress: number;
   status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
   start_time: string;
+  deadlineHours?: number; // Optional, in hours (can be hours or days converted to hours)
+  value_impact?: number; // Optional, 1-100
+  difficulty?: number; // Optional, 1-10
   tags: string[];
   alert_enabled: boolean;
   created_at: string;

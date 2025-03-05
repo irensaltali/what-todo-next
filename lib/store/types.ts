@@ -28,3 +28,9 @@ export type StoreAction =
   | { type: 'SET_ERROR'; resource: keyof CacheState; error: string | null }
   | { type: 'SET_DATA'; resource: keyof CacheState; data: any }
   | { type: 'CLEAR_CACHE' };
+
+export interface StoreContextType extends StoreState {
+  dispatch: React.Dispatch<StoreAction>;
+  invalidateCache: (resource: keyof CacheState) => void;
+  refreshData: (resource: keyof CacheState) => Promise<void>;
+}

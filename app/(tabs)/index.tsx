@@ -4,6 +4,12 @@ import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import Animated, { 
+  useAnimatedStyle, 
+  withTiming, 
+  useSharedValue,
+  interpolate
+} from 'react-native-reanimated';
 import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { StatusBar } from '../../components/StatusBar';
@@ -56,6 +62,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
+  const collapsibleHeight = useSharedValue(1); // 1 for open, 0 for closed
 
   useEffect(() => {
     fetchProfile();
@@ -127,6 +135,22 @@ export default function HomeScreen() {
     // Add focus mode logic here
   };
 
+  const toggleStatusSection = () => {
+    setStatusSectionCollapsed(!statusSectionCollapsed);
+    collapsibleHeight.value = withTiming(statusSectionCollapsed ? 1 : 0, { duration: 300 });
+  };
+
+  const contentAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      height: interpolate(
+        collapsibleHeight.value,
+        [0, 1],
+        [0, 200], // Adjust the max height as needed
+      ),
+      opacity: collapsibleHeight.value,
+    };
+  });
+
   const StatusCard = ({ status, count, color, iconColor }: { status: string; count: number; color: string; iconColor: string }) => (
     <View style={[styles.statusCard, { backgroundColor: color }]}>
       <View style={styles.statusContent}>
@@ -141,7 +165,7 @@ export default function HomeScreen() {
                     ? 'close-outline'
                     : 'checkmark-outline'
             }
-            size={32}
+            size={24}
             color="#fff"
           />
         </View>
@@ -208,16 +232,51 @@ export default function HomeScreen() {
           onFocusPress={handleFocusPress}
         />
 
-        <View style={styles.statusGrid}>
-          {Object.entries(STATUS_COUNTS).map(([status, count]) => (
-            <StatusCard
-              key={status}
-              status={status}
-              count={count}
-              color={STATUS_COLORS[status as keyof typeof STATUS_COLORS]}
-              iconColor={STATUS_ICON_COLORS[status as keyof typeof STATUS_ICON_COLORS]}
+        <View style={styles.collapsibleContainer}>
+          <Pressable 
+            style={styles.collapsibleHeader} 
+            onPress={toggleStatusSection}
+          >
+            {statusSectionCollapsed ? (
+              <View style={styles.collapsedHeaderContent}>
+                <Text style={styles.collapsibleTitle}>Status Overview</Text>
+                <View style={styles.statusSummary}>
+                  {Object.entries(STATUS_COUNTS).map(([status, count]) => (
+                    <View key={status} style={styles.statusBadge}>
+                      <View 
+                        style={[
+                          styles.statusDot, 
+                          { backgroundColor: STATUS_COLORS[status as keyof typeof STATUS_COLORS] }
+                        ]} 
+                      />
+                      <Text style={styles.statusCount}>{count}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.collapsibleTitle}>Status Overview</Text>
+            )}
+            <Ionicons 
+              name={statusSectionCollapsed ? "chevron-forward" : "chevron-down"} 
+              size={20} 
+              color="#8E8E93" 
             />
-          ))}
+          </Pressable>
+          
+          <Animated.View style={[styles.collapsibleContent, contentAnimatedStyle]}>
+            <View style={styles.statusGrid}>
+              {Object.entries(STATUS_COUNTS).map(([status, count]) => (
+                <StatusCard
+                  key={status}
+                  status={status}
+                  count={count}
+                  color={STATUS_COLORS[status as keyof typeof STATUS_COLORS]}
+                  iconColor={STATUS_ICON_COLORS[status as keyof typeof STATUS_ICON_COLORS]}
+                />
+              ))}
+            </View>
+          </Animated.View>
         </View>
 
         <View style={styles.tasksSection}>
@@ -283,18 +342,64 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  collapsibleContainer: {
+    marginBottom: 16,
+    backgroundColor: 'transparent',
+    marginHorizontal: 16,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  collapsibleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  collapsibleContent: {
+    overflow: 'hidden',
+  },
+  collapsedHeaderContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statusSummary: {
+    flexDirection: 'row',
+    marginLeft: 16,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  statusCount: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
   statusGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginBottom: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
   },
   statusCard: {
     width: '48%',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -306,25 +411,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusTextContainer: {
     flex: 1,
     justifyContent: 'space-between',
-    marginLeft: 12,
+    marginLeft: 8,
   },
   statusTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#080100',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statusLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#080100',
     opacity: 0.9,
   },

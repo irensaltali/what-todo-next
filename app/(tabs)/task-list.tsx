@@ -13,16 +13,7 @@ import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
-  progress: number;
-  start_time: string;
-  tags: string[];
-}
+import { Task } from '@/lib/store/models/task';
 
 const STATUS_COLORS = {
   ongoing: '#5593F1',

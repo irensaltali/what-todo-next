@@ -3,28 +3,13 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextI
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { format, isAfter, startOfDay, differenceInDays, addDays } from 'date-fns';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { DatePicker } from '../../components/DatePicker';
-import { StatusBar } from '../../components/StatusBar';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  task_count: number;
-  progress: number;
-  status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
-  start_time: string;
-  deadline?: string;
-  value_impact?: number;
-  difficulty?: number;
-  priority_score?: number;
-  tags: string[];
-  alert_enabled: boolean;
-}
+import { DatePicker } from '@/components/DatePicker';
+import { StatusBar } from '@/components/StatusBar';
+import { Task } from '@/lib/store/models/task';
+import { calculatePriorityScore } from '@/lib/utils/priority';
 
 interface EditableFields {
   title: boolean;
@@ -109,8 +94,8 @@ export default function TaskDetailsScreen() {
     // Use task data or edited task data
     const valueImpact = taskData.value_impact ?? task?.value_impact ?? 50;
     const difficulty = taskData.difficulty ?? task?.difficulty ?? 5;
-    const deadlineDate = taskData.deadline ? new Date(taskData.deadline) : 
-                         (task?.deadline ? new Date(task.deadline) : addDays(new Date(), 7));
+    const deadlineDate = taskData.deadlineHours ? new Date(taskData.deadlineHours) : 
+                         (task?.deadlineHours ? new Date(task.deadlineHours) : addDays(new Date(), 7));
     
     // Calculate deadline score (higher for closer deadlines)
     const today = startOfDay(new Date());
@@ -152,9 +137,11 @@ export default function TaskDetailsScreen() {
           return 'Date cannot be in the past';
         }
         break;
-      case 'deadline':
-        const deadline = new Date(value);
-        if (isNaN(deadline.getTime())) return 'Invalid deadline';
+      case 'deadlineHours':
+        const deadlineHours = Number(value);
+        if (isNaN(deadlineHours) || deadlineHours < 0) {
+          return 'Deadline must be a positive number';
+        }
         break;
       case 'value_impact':
         const impact = Number(value);
@@ -183,7 +170,7 @@ export default function TaskDetailsScreen() {
   const handleCancel = (field: keyof EditableFields) => {
     setEditableFields(prev => ({ ...prev, [field]: false }));
     if (task) {
-      setEditedTask(prev => ({ ...prev, [field]: task[field] }));
+      setEditedTask(prev => ({ ...prev, [field]: task[field as keyof Task] }));
     }
   };
 
@@ -449,8 +436,8 @@ export default function TaskDetailsScreen() {
             {editableFields.deadline ? (
               <View style={styles.editableDate}>
                 <DatePicker
-                  date={new Date(editedTask.deadline || task.deadline || addDays(new Date(), 7))}
-                  onDateChange={(date) => handleChange('deadline', date.toISOString())}
+                  date={new Date(editedTask.deadlineHours || task.deadlineHours || addDays(new Date(), 7))}
+                  onDateChange={(date) => handleChange('deadlineHours', date.toISOString())}
                 />
                 <View style={styles.editActions}>
                   <Pressable
@@ -479,7 +466,7 @@ export default function TaskDetailsScreen() {
                 onPress={() => handleEdit('deadline')}
               >
                 <Text style={styles.infoText}>
-                  Deadline: {task.deadline ? format(new Date(task.deadline), 'MMM d, yyyy') : 'Not set'}
+                  Deadline: {task.deadlineHours ? format(new Date(task.deadlineHours), 'MMM d, yyyy') : 'Not set'}
                 </Text>
                 <Ionicons name="pencil" size={20} color="#8E8E93" />
               </Pressable>
@@ -592,20 +579,20 @@ export default function TaskDetailsScreen() {
             )}
           </View>
 
-          {task.priority_score !== undefined && (
+          {calculatePriorityScore(task) !== undefined && (
             <View style={styles.infoRow}>
               <Ionicons name="star-outline" size={20} color="#8E8E93" />
               <View style={styles.priorityContainer}>
                 <Text style={styles.infoText}>
-                  Priority Score: {task.priority_score}/100
+                  Priority Score: {calculatePriorityScore(task)}/100
                 </Text>
                 <View style={styles.priorityBar}>
                   <View 
                     style={[
                       styles.priorityFill, 
-                      { width: `${task.priority_score}%` },
-                      task.priority_score < 40 ? styles.lowPriority :
-                      task.priority_score < 70 ? styles.mediumPriority :
+                      { width: `${calculatePriorityScore(task)}%` },
+                      calculatePriorityScore(task) < 40 ? styles.lowPriority :
+                      calculatePriorityScore(task) < 70 ? styles.mediumPriority :
                       styles.highPriority
                     ]} 
                   />
