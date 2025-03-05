@@ -15,6 +15,49 @@ import { router } from 'expo-router';
 import { StatusBar } from '../../components/StatusBar';
 import FeaturedTaskCard from '../../components/FeaturedTaskCard';
 
+// Get screen dimensions
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+// Create a responsive design system
+const size = {
+  base: 8,
+  font: screenWidth * 0.04,
+  radius: 8,
+  padding: screenWidth * 0.04,
+};
+
+// Responsive font sizes
+const fontSize = {
+  small: size.font * 0.75,
+  medium: size.font,
+  large: size.font * 1.5,
+  xlarge: size.font * 2,
+};
+
+// Responsive spacing
+const spacing = {
+  xs: size.base * 0.5,
+  sm: size.base * 1.1,
+  md: size.base * 1.5,
+  lg: size.base * 2,
+  xl: size.base * 3,
+};
+
+// Responsive sizing
+const sizing = {
+  avatarSize: screenWidth * 0.12,
+  iconSize: {
+    small: screenWidth * 0.05,
+    medium: screenWidth * 0.06,
+    large: screenWidth * 0.08,
+  },
+  progressCircle: screenWidth * 0.12,
+  progressWidth: screenWidth * 0.012,
+  statusIcon: screenWidth * 0.1,
+  statusDot: screenWidth * 0.02,
+  settingsButton: screenWidth * 0.1,
+};
+
 interface Task {
   id: string;
   title: string;
@@ -145,7 +188,7 @@ export default function HomeScreen() {
       height: interpolate(
         collapsibleHeight.value,
         [0, 1],
-        [0, 200], // Adjust the max height as needed
+        [0, screenHeight * 0.17],
       ),
       opacity: collapsibleHeight.value,
     };
@@ -165,7 +208,7 @@ export default function HomeScreen() {
                     ? 'close-outline'
                     : 'checkmark-outline'
             }
-            size={24}
+            size={sizing.iconSize.medium}
             color="#fff"
           />
         </View>
@@ -189,8 +232,8 @@ export default function HomeScreen() {
       </View>
       <View style={styles.progressContainer}>
         <AnimatedCircularProgress
-          size={50}
-          width={5}
+          size={sizing.progressCircle}
+          width={sizing.progressWidth}
           fill={task.progress || 0}
           tintColor={STATUS_COLORS[task.status]}
           backgroundColor="#E2E2E2"
@@ -220,7 +263,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <Pressable style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color="#1C1C1E" />
+            <Ionicons name="settings-outline" size={sizing.iconSize.medium} color="#1C1C1E" />
           </Pressable>
         </View>
 
@@ -259,7 +302,7 @@ export default function HomeScreen() {
             )}
             <Ionicons 
               name={statusSectionCollapsed ? "chevron-forward" : "chevron-down"} 
-              size={20} 
+              size={sizing.iconSize.small} 
               color="#8E8E93" 
             />
           </Pressable>
@@ -284,9 +327,9 @@ export default function HomeScreen() {
           <FlashList
             data={tasks}
             renderItem={({ item }) => <TaskCard task={item} />}
-            estimatedItemSize={100}
-            contentContainerStyle={styles.taskList}
+            estimatedItemSize={80}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: spacing.sm }}
           />
         </View>
       </View>
@@ -306,33 +349,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 12,
+    width: sizing.avatarSize,
+    height: sizing.avatarSize,
+    borderRadius: sizing.avatarSize / 2,
+    marginRight: spacing.md,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: fontSize.large,
     fontWeight: 'bold',
     color: '#1C1C1E',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: fontSize.small,
     color: '#8E8E93',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: sizing.settingsButton,
+    height: sizing.settingsButton,
+    borderRadius: sizing.settingsButton / 2,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -343,19 +386,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   collapsibleContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.sm,
     backgroundColor: 'transparent',
-    marginHorizontal: 16,
+    marginHorizontal: spacing.md,
   },
   collapsibleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   collapsibleTitle: {
-    fontSize: 16,
+    fontSize: fontSize.medium,
     fontWeight: '600',
     color: '#8E8E93',
   },
@@ -370,21 +413,21 @@ const styles = StyleSheet.create({
   },
   statusSummary: {
     flexDirection: 'row',
-    marginLeft: 16,
+    marginLeft: spacing.md,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
+    width: sizing.statusDot,
+    height: sizing.statusDot,
+    borderRadius: sizing.statusDot / 2,
+    marginRight: spacing.xs,
   },
   statusCount: {
-    fontSize: 12,
+    fontSize: fontSize.small,
     color: '#8E8E93',
     fontWeight: '500',
   },
@@ -392,14 +435,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 0,
   },
   statusCard: {
     width: '48%',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: size.radius * 1.5,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -411,47 +454,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: sizing.statusIcon,
+    height: sizing.statusIcon,
+    borderRadius: sizing.statusIcon / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusTextContainer: {
     flex: 1,
     justifyContent: 'space-between',
-    marginLeft: 8,
+    marginLeft: spacing.sm,
   },
   statusTitle: {
-    fontSize: 14,
+    fontSize: fontSize.medium,
     fontWeight: 'bold',
     color: '#080100',
-    marginBottom: 2,
+    marginBottom: spacing.xs / 2,
   },
   statusLabel: {
-    fontSize: 12,
+    fontSize: fontSize.small,
     color: '#080100',
     opacity: 0.9,
   },
   tasksSection: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
+    marginTop: 0,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: fontSize.large,
     color: '#1C1C1E',
-    marginBottom: 16,
-  },
-  taskList: {
-    paddingBottom: 16,
+    marginBottom: spacing.sm,
   },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: size.radius * 1.5,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: '#080100',
     shadowColor: '#010101',
@@ -462,21 +503,21 @@ const styles = StyleSheet.create({
   },
   taskInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: spacing.md,
   },
   taskTitle: {
-    fontSize: 16,
+    fontSize: fontSize.medium,
     fontWeight: 'bold',
     color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   taskType: {
-    fontSize: 14,
+    fontSize: fontSize.small,
     color: '#8E8E93',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   taskCount: {
-    fontSize: 12,
+    fontSize: fontSize.small * 0.9,
     color: '#8E8E93',
   },
   progressContainer: {
@@ -484,7 +525,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   progressText: {
-    fontSize: 12,
+    fontSize: fontSize.small,
     fontWeight: 'bold',
     color: '#1C1C1E',
   },
