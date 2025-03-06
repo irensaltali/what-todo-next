@@ -4,6 +4,7 @@ export interface Task {
   title: string;
   description: string;
   type: string;
+  list: string;
   task_count: number;
   progress: number;
   status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
