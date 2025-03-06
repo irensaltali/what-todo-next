@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Task } from '@/lib/store/models/task';
+import { useTaskEntry } from '../../contexts/TaskEntryContext';
 
 // Group tasks by list
 const groupTasksByList = (tasks: Task[]) => {
@@ -39,6 +40,7 @@ export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMoreData, setHasMoreData] = useState(true);
+  const { isTaskEntryVisible, showTaskEntry, hideTaskEntry } = useTaskEntry();
   const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
@@ -267,6 +269,12 @@ export default function TasksScreen() {
     );
   };
 
+  // Handle task added event
+  const handleTaskAdded = () => {
+    hideTaskEntry();
+    handleRefresh();
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -288,6 +296,8 @@ export default function TasksScreen() {
           <Text style={styles.emptyStateText}>No tasks found</Text>
         </View>
       )}
+      
+      {/* Remove the FAB button since we're using the tab button */}
     </View>
   );
 }

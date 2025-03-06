@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useAuth } from '../../lib/useAuth';
 import { Redirect } from 'expo-router';
+import { useTaskEntry } from '../../contexts/TaskEntryContext';
 
 export default function TabLayout() {
   const { session, loading } = useAuth();
+  const { showTaskEntry } = useTaskEntry();
 
   // If not authenticated, redirect to sign in
   if (!session && !loading) {
@@ -75,7 +77,9 @@ export default function TabLayout() {
               style={({ pressed }) => [
                 styles.addButton,
                 pressed && styles.addButtonPressed,
-              ]}>
+              ]}
+              onPress={() => showTaskEntry()} // Use context to show modal instead of navigation
+            >
               <View style={styles.addButtonInner}>
                 <Ionicons name="add" size={32} color="#fff" />
               </View>
