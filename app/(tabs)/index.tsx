@@ -178,6 +178,10 @@ export default function HomeScreen() {
     // Add focus mode logic here
   };
 
+  const handleProfilePress = () => {
+    router.push('/(tabs)/profile');
+  };
+
   const toggleStatusSection = () => {
     setStatusSectionCollapsed(!statusSectionCollapsed);
     collapsibleHeight.value = withTiming(statusSectionCollapsed ? 1 : 0, { duration: 300 });
@@ -230,21 +234,6 @@ export default function HomeScreen() {
         <Text style={styles.taskType}>{task.type}</Text>
         <Text style={styles.taskCount}>{task.task_count} Tasks</Text>
       </View>
-      <View style={styles.progressContainer}>
-        <AnimatedCircularProgress
-          size={sizing.progressCircle}
-          width={sizing.progressWidth}
-          fill={task.progress || 0}
-          tintColor={STATUS_COLORS[task.status]}
-          backgroundColor="#E2E2E2"
-          rotation={0}
-          lineCap="round"
-        >
-          {(fill) => (
-            <Text style={styles.progressText}>{Math.round(fill)}%</Text>
-          )}
-        </AnimatedCircularProgress>
-      </View>
     </Pressable>
   );
 
@@ -253,18 +242,17 @@ export default function HomeScreen() {
       <View style={[styles.content, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Image
-              source={{ uri: profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' }}
-              style={styles.avatar}
-            />
+            <Pressable onPress={handleProfilePress}>
+              <Image
+                source={{ uri: profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' }}
+                style={styles.avatar}
+              />
+            </Pressable>
             <View>
               <Text style={styles.greeting}>Hi, {profile?.name || 'User'} 👋</Text>
               <Text style={styles.subtitle}>Let's find What To Do Next</Text>
             </View>
           </View>
-          <Pressable style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={sizing.iconSize.medium} color="#1C1C1E" />
-          </Pressable>
         </View>
 
         <FeaturedTaskCard
@@ -323,7 +311,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.tasksSection}>
-          <Text style={styles.sectionTitle}>Recent Tasks</Text>
+          <Text style={styles.collapsibleTitle}>Recent Tasks</Text>
           <FlashList
             data={tasks}
             renderItem={({ item }) => <TaskCard task={item} />}
@@ -347,7 +335,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
@@ -372,19 +360,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: spacing.xs,
   },
-  settingsButton: {
-    width: sizing.settingsButton,
-    height: sizing.settingsButton,
-    borderRadius: sizing.settingsButton / 2,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   collapsibleContainer: {
     marginBottom: spacing.sm,
     backgroundColor: 'transparent',
@@ -394,13 +369,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
   },
   collapsibleTitle: {
     fontSize: fontSize.medium,
     fontWeight: '600',
     color: '#8E8E93',
+    marginBottom: spacing.sm,
   },
   collapsibleContent: {
     overflow: 'hidden',
@@ -478,8 +453,10 @@ const styles = StyleSheet.create({
   },
   tasksSection: {
     flex: 1,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 0,
+    marginHorizontal: spacing.md,
     marginTop: 0,
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     fontSize: fontSize.large,
@@ -503,7 +480,6 @@ const styles = StyleSheet.create({
   },
   taskInfo: {
     flex: 1,
-    marginRight: spacing.md,
   },
   taskTitle: {
     fontSize: fontSize.medium,
@@ -519,14 +495,5 @@ const styles = StyleSheet.create({
   taskCount: {
     fontSize: fontSize.small * 0.9,
     color: '#8E8E93',
-  },
-  progressContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  progressText: {
-    fontSize: fontSize.small,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
   },
 });
