@@ -14,7 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabase';
 
@@ -193,12 +193,29 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     }
   };
 
-  const handlePanGesture = ({ nativeEvent }: any) => {
+  const handlePanGesture = (translationY: number) => {
     // Handle drag to dismiss
-    if (nativeEvent.translationY > 100) {
+    if (translationY > 100) {
       handleClose();
     }
   };
+  
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (event.translationY > 0) {
+        translateY.setValue(event.translationY);
+      }
+    })
+    .onEnd((event) => {
+      if (event.translationY > 100) {
+        handleClose();
+      } else {
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
 
   return (
     <Modal
@@ -219,7 +236,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
           style={styles.keyboardAvoidingView}
         >
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <PanGestureHandler onGestureEvent={handlePanGesture}>
+            <GestureDetector gesture={panGesture}>
               <Animated.View 
                 style={[
                   styles.bottomSheet,
@@ -332,7 +349,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   </View>
                 </View>
               </Animated.View>
-            </PanGestureHandler>
+            </GestureDetector>
           </GestureHandlerRootView>
         </KeyboardAvoidingView>
       </View>
