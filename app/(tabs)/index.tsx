@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Pressable, Dimensions } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  Dimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import Animated, { 
-  useAnimatedStyle, 
-  withTiming, 
-  useSharedValue,
-  interpolate
-} from 'react-native-reanimated';
-import { supabase } from '../../lib/supabase';
 import { router } from 'expo-router';
-import { StatusBar } from '../../components/StatusBar';
-import FeaturedTaskCard from '../../components/FeaturedTaskCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  useSharedValue,
+  withTiming,
+  withSpring,
+  runOnJS,
+  withDecay
+} from 'react-native-reanimated';
+import { supabase } from '@/lib/supabase';
+import FeaturedTaskCard from '@/components/FeaturedTaskCard';
 
 // Get screen dimensions
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -106,7 +113,12 @@ export default function HomeScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
-  const collapsibleHeight = useSharedValue(1); // 1 for open, 0 for closed
+  const scrollY = useSharedValue(0);
+  const lastScrollY = useSharedValue(0);
+  const scrollVelocity = useSharedValue(0);
+  const statusSectionHeight = screenHeight * 0.16; // Height of the status section when expanded
+  const collapsibleHeight = useSharedValue(statusSectionHeight);
+  const summaryOpacity = useSharedValue(0);
 
   useEffect(() => {
     fetchProfile();
@@ -182,19 +194,70 @@ export default function HomeScreen() {
     router.push('/(tabs)/profile');
   };
 
+  // Toggle status section manually
   const toggleStatusSection = () => {
-    setStatusSectionCollapsed(!statusSectionCollapsed);
-    collapsibleHeight.value = withTiming(statusSectionCollapsed ? 1 : 0, { duration: 300 });
+    const newCollapsedState = !statusSectionCollapsed;
+    setStatusSectionCollapsed(newCollapsedState);
+
+    if (newCollapsedState) {
+      // Collapse
+      collapsibleHeight.value = withTiming(0, { duration: 300 });
+      summaryOpacity.value = withTiming(1, { duration: 300 });
+    } else {
+      // Expand
+      collapsibleHeight.value = withTiming(statusSectionHeight, { duration: 300 });
+      summaryOpacity.value = withTiming(0, { duration: 300 });
+    }
   };
 
-  const contentAnimatedStyle = useAnimatedStyle(() => {
+  // Scroll handler to track position and velocity
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      // Calculate velocity (change in position)
+      const currentY = event.contentOffset.y;
+      scrollVelocity.value = currentY - lastScrollY.value;
+      lastScrollY.value = currentY;
+
+      // Store current scroll position
+      scrollY.value = currentY;
+
+      // During active scrolling, we just track position but don't collapse yet
+    },
+    onEndDrag: (event) => {
+      // When user lifts finger, decide whether to collapse based on position and velocity
+      const currentY = event.contentOffset.y;
+      const velocity = Math.abs(scrollVelocity.value);
+
+      // Calculate animation duration based on velocity (faster scroll = faster animation)
+      // Clamp between 150ms and 500ms for reasonable animation speed
+      const animDuration = Math.max(150, Math.min(500, 300 / (velocity * 0.1 + 1)));
+
+      if (currentY > statusSectionHeight * 0.3 || (scrollVelocity.value > 5 && currentY > statusSectionHeight * 0.1)) {
+        // Collapse if scrolled past threshold OR scrolling up quickly
+        collapsibleHeight.value = withTiming(0, { duration: animDuration });
+        summaryOpacity.value = withTiming(1, { duration: animDuration });
+        runOnJS(setStatusSectionCollapsed)(true);
+      } else if (currentY < statusSectionHeight * 0.1 || (scrollVelocity.value < -5 && currentY < statusSectionHeight * 0.5)) {
+        // Expand if near top OR scrolling down quickly
+        collapsibleHeight.value = withTiming(statusSectionHeight, { duration: animDuration });
+        summaryOpacity.value = withTiming(0, { duration: animDuration });
+        runOnJS(setStatusSectionCollapsed)(false);
+      }
+    }
+  });
+
+  // Animated styles
+  const statusSectionStyle = useAnimatedStyle(() => {
     return {
-      height: interpolate(
-        collapsibleHeight.value,
-        [0, 1],
-        [0, screenHeight * 0.17],
-      ),
-      opacity: collapsibleHeight.value,
+      height: collapsibleHeight.value,
+      opacity: collapsibleHeight.value / statusSectionHeight,
+      overflow: 'hidden',
+    };
+  });
+
+  const statusSummaryStyle = useAnimatedStyle(() => {
+    return {
+      opacity: summaryOpacity.value
     };
   });
 
@@ -239,7 +302,8 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.content, { paddingTop: insets.top }]}>
+      {/* Fixed Header Section */}
+      <View style={[styles.fixedHeaderContainer, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Pressable onPress={handleProfilePress}>
@@ -255,6 +319,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Featured Task with consistent left alignment */}
         <FeaturedTaskCard
           taskTitle={featuredTaskData.taskTitle}
           taskDescription={featuredTaskData.taskDescription}
@@ -263,39 +328,48 @@ export default function HomeScreen() {
           onFocusPress={handleFocusPress}
         />
 
-        <View style={styles.collapsibleContainer}>
-          <Pressable 
-            style={styles.collapsibleHeader} 
-            onPress={toggleStatusSection}
-          >
-            {statusSectionCollapsed ? (
-              <View style={styles.collapsedHeaderContent}>
-                <Text style={styles.collapsibleTitle}>Status Overview</Text>
-                <View style={styles.statusSummary}>
-                  {Object.entries(STATUS_COUNTS).map(([status, count]) => (
-                    <View key={status} style={styles.statusBadge}>
-                      <View 
-                        style={[
-                          styles.statusDot, 
-                          { backgroundColor: STATUS_COLORS[status as keyof typeof STATUS_COLORS] }
-                        ]} 
-                      />
-                      <Text style={styles.statusCount}>{count}</Text>
-                    </View>
-                  ))}
+        {/* Fixed Status Overview title with consistent left alignment */}
+        <Pressable
+          style={styles.sectionTitleContainer}
+          onPress={toggleStatusSection}
+        >
+          <Text style={styles.sectionTitle}>Status Overview</Text>
+
+          <View style={styles.headerRightContainer}>
+            <Animated.View style={[styles.statusSummary, statusSummaryStyle]}>
+              {Object.entries(STATUS_COUNTS).map(([status, count]) => (
+                <View key={status} style={styles.statusBadge}>
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: STATUS_COLORS[status as keyof typeof STATUS_COLORS] }
+                    ]}
+                  />
+                  <Text style={styles.statusCount}>{count}</Text>
                 </View>
-              </View>
-            ) : (
-              <Text style={styles.collapsibleTitle}>Status Overview</Text>
-            )}
-            <Ionicons 
-              name={statusSectionCollapsed ? "chevron-forward" : "chevron-down"} 
-              size={sizing.iconSize.small} 
-              color="#8E8E93" 
+              ))}
+            </Animated.View>
+
+            <Ionicons
+              name={statusSectionCollapsed ? "chevron-forward" : "chevron-down"}
+              size={sizing.iconSize.small}
+              color="#8E8E93"
             />
-          </Pressable>
-          
-          <Animated.View style={[styles.collapsibleContent, contentAnimatedStyle]}>
+          </View>
+        </Pressable>
+      </View>
+
+      {/* Scrollable Content */}
+      <Animated.ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.collapsibleContainer}>
+          {/* Status section cards */}
+          <Animated.View style={[styles.collapsibleContent, statusSectionStyle]}>
             <View style={styles.statusGrid}>
               {Object.entries(STATUS_COUNTS).map(([status, count]) => (
                 <StatusCard
@@ -311,16 +385,15 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.tasksSection}>
-          <Text style={styles.collapsibleTitle}>Recent Tasks</Text>
-          <FlashList
-            data={tasks}
-            renderItem={({ item }) => <TaskCard task={item} />}
-            estimatedItemSize={80}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: spacing.sm }}
-          />
+          <Text style={styles.sectionTitle}>Upcoming</Text>
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} />
+          ))}
+          {tasks.length === 0 && (
+            <Text style={styles.emptyStateText}>No upcoming tasks. Add one!</Text>
+          )}
         </View>
-      </View>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -330,17 +403,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F6F6F6',
   },
-  content: {
+  fixedHeaderContainer: {
+    backgroundColor: '#F6F6F6',
+    zIndex: 10,
+    paddingHorizontal: spacing.md,
+  },
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    // paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -361,17 +446,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   collapsibleContainer: {
-    marginBottom: spacing.sm,
+    // marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
     backgroundColor: 'transparent',
-    marginHorizontal: spacing.md,
   },
-  collapsibleHeader: {
+  sectionTitleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: 0, // Removed padding for left alignment
   },
-  collapsibleTitle: {
+  sectionTitle: {
     fontSize: fontSize.medium,
     fontWeight: '600',
     color: '#8E8E93',
@@ -380,15 +465,9 @@ const styles = StyleSheet.create({
   collapsibleContent: {
     overflow: 'hidden',
   },
-  collapsedHeaderContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   statusSummary: {
     flexDirection: 'row',
-    marginLeft: spacing.md,
+    marginRight: spacing.sm,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -410,7 +489,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     paddingHorizontal: 0,
   },
   statusCard: {
@@ -458,11 +537,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: spacing.sm,
   },
-  sectionTitle: {
-    fontSize: fontSize.large,
-    color: '#1C1C1E',
-    marginBottom: spacing.sm,
-  },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -495,5 +569,11 @@ const styles = StyleSheet.create({
   taskCount: {
     fontSize: fontSize.small * 0.9,
     color: '#8E8E93',
+  },
+  emptyStateText: {
+    fontSize: fontSize.medium,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: spacing.lg,
   },
 });

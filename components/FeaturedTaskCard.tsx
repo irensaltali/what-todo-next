@@ -93,12 +93,12 @@ const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: 12,
     padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 24,
+    // marginHorizontal: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
-      width: 0,
-      height: 4,
+      width: 2,
+      height: 5,
     },
     shadowOpacity: 0.2,
     shadowRadius: 8,
