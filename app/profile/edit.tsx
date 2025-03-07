@@ -12,11 +12,11 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { getAvatarUrl } from '../../lib/avatarUrl';
-import { ImageEditor } from '../../components/ImageEditor';
-import { uploadAvatar } from '../../lib/avatar';
-import { StatusBar } from '../../components/StatusBar';
+import { supabase } from '@/lib/supabase';
+import { getAvatarUrl } from '@/lib/avatarUrl';
+import { ImageEditor } from '@/components/ImageEditor';
+import { uploadAvatar } from '@/lib/avatar';
+import { StatusBar } from '@/components/StatusBar';
 
 interface Profile {
   id: string;

@@ -16,8 +16,7 @@ import Animated, {
   FadeInDown,
   FadeInUp,
 } from 'react-native-reanimated';
-import { supabase } from '../../lib/supabase';
-import { StatusBar } from '../../components/StatusBar';
+import { supabase } from '@/lib/supabase';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
@@ -61,7 +60,7 @@ export default function SignInScreen() {
         style={styles.imageContainer}
       >
         <Image
-          source={require('../../assets/images/signin.png')}
+          source={require('@/assets/images/signin.png')}
           style={styles.image}
           resizeMode="contain"
         />

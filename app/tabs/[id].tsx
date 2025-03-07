@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextI
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { format, isAfter, startOfDay } from 'date-fns';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { DatePicker } from '../../components/DatePicker';
+import { DatePicker } from '@/components/DatePicker';
 
 interface Task {
   id: string;

@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Task } from '@/lib/store/models/task';
-import { useTaskEntry } from '../../contexts/TaskEntryContext';
+import { useTaskEntry } from '@/contexts/TaskEntryContext';
 
 // Group tasks by list
 const groupTasksByList = (tasks: Task[]) => {

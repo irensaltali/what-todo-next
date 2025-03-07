@@ -1,7 +1,7 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { Redirect } from 'expo-router';
-import { useAuth } from '../../lib/useAuth';
+import { useAuth } from '@/lib/useAuth';
 
 export default function AuthLayout() {
   const { session, loading } = useAuth();

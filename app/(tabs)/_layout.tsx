@@ -2,9 +2,9 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Pressable } from 'react-native';
-import { useAuth } from '../../lib/useAuth';
+import { useAuth } from '@/lib/useAuth';
 import { Redirect } from 'expo-router';
-import { useTaskEntry } from '../../contexts/TaskEntryContext';
+import { useTaskEntry } from '@/contexts/TaskEntryContext';
 
 export default function TabLayout() {
   const { session, loading } = useAuth();

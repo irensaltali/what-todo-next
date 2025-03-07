@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
-import { getAvatarUrl } from '../../lib/avatarUrl';
+import { getAvatarUrl } from '@/lib/avatarUrl';
 import { format } from 'date-fns';
-import { StatusBar } from '../../components/StatusBar';
+import { StatusBar } from '@/components/StatusBar';
 
 interface Profile {
   id: string;
