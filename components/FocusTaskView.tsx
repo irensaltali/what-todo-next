@@ -14,11 +14,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withTiming,
   useSharedValue,
+  withTiming,
+  interpolate,
 } from 'react-native-reanimated';
+import Svg, { Circle, Line } from 'react-native-svg';
 
 interface FocusTaskViewProps {
   visible: boolean;
@@ -29,7 +29,7 @@ interface FocusTaskViewProps {
   };
 }
 
-type Mode = 'timer' | 'stopwatch';
+type Mode = 'pomo' | 'stopwatch';
 
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -40,12 +40,30 @@ const formatTime = (totalSeconds: number) => {
     .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
 
+// Create the animated circle component
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('timer');
+  const [mode, setMode] = useState<Mode>('pomo');
   const [isRunning, setIsRunning] = useState(false);
-  const [time, setTime] = useState(0);
-  const pulseAnim = useSharedValue(1);
+  const [time, setTime] = useState(25 * 60); // Default 25 minutes for Pomodoro
+  const [totalTime, setTotalTime] = useState(25 * 60); // Keep track of total time for progress
+  const [sessionCount, setSessionCount] = useState(0);
+  const [isBreak, setIsBreak] = useState(false);
+  const [workDuration, setWorkDuration] = useState(25 * 60);
+  const [shortBreakDuration, setShortBreakDuration] = useState(5 * 60);
+  const [longBreakDuration, setLongBreakDuration] = useState(15 * 60);
+  const maxSessionsBeforeLongBreak = 4;
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Progress circle animation
+  const progress = useSharedValue(0);
+  const circleSize = width * 0.7;
+  const strokeWidth = 3;
+  const radius = (circleSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -58,16 +76,52 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   }, [isRunning, mode]);
 
   useEffect(() => {
-    if (mode === 'timer') {
-      setTime(25 * 60); // 25 minutes default
+    if (mode === 'pomo') {
+      setTime(workDuration);
+      setTotalTime(workDuration);
     } else {
       setTime(0);
+      setTotalTime(60); // For stopwatch, track progress in 1-minute increments
     }
     setIsRunning(false);
-  }, [mode]);
+    progress.value = 0;
+  }, [mode, workDuration]);
+
+  useEffect(() => {
+    // Update progress for circle
+    if (mode === 'pomo') {
+      progress.value = withTiming(1 - time / totalTime, { duration: 300 });
+    } else if (mode === 'stopwatch') {
+      // For stopwatch, reset progress every minute
+      const currentMinute = Math.floor(time / 60);
+      const secondsInCurrentMinute = time % 60;
+      progress.value = withTiming(secondsInCurrentMinute / 60, { duration: 300 });
+    }
+    
+    // Handle completion of timer
+    if (isRunning && time === 0 && mode === 'pomo') {
+      if (!isBreak) {
+        setSessionCount((prev) => prev + 1);
+        if (sessionCount + 1 < maxSessionsBeforeLongBreak) {
+          setIsBreak(true);
+          setTime(shortBreakDuration);
+          setTotalTime(shortBreakDuration);
+        } else {
+          setIsBreak(true);
+          setSessionCount(0);
+          setTime(longBreakDuration);
+          setTotalTime(longBreakDuration);
+        }
+      } else {
+        setIsBreak(false);
+        setTime(workDuration);
+        setTotalTime(workDuration);
+      }
+    }
+  }, [time, isRunning, mode, sessionCount, isBreak]);
 
   const handleStartStop = () => {
-    if (mode === 'timer' && time === 0) {
+    if (mode === 'pomo' && time === 0) {
       return; // Prevent starting when timer is at 0
     }
     setIsRunning(!isRunning);
@@ -75,22 +129,53 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
 
   const handleReset = () => {
     setIsRunning(false);
-    setTime(mode === 'timer' ? 25 * 60 : 0);
+    setIsBreak(false);
+    setSessionCount(0);
+    
+    if (mode === 'pomo') {
+      setTime(workDuration);
+      setTotalTime(workDuration);
+    } else {
+      setTime(0);
+      setTotalTime(60);
+    }
+    
+    progress.value = 0;
   };
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnim.value }],
-  }));
+  // Circle progress animation
+  const animatedCircleProps = useAnimatedStyle(() => {
+    const strokeDashoffset = circumference * (1 - progress.value);
+    
+    return {
+      strokeDashoffset,
+      strokeWidth: mode === 'pomo' ? 
+        interpolate(
+          progress.value, 
+          [0, 1], 
+          [strokeWidth, strokeWidth * 3]
+        ) : strokeWidth,
+      stroke: mode === 'pomo' ? 
+        progress.value > 0.75 ? '#FF8C42' : 
+        progress.value > 0.5 ? '#FFA66D' : 
+        progress.value > 0.25 ? '#FFC39E' : 
+        '#7EB6FF' : '#7EB6FF',
+    } as any;
+  });
 
-  useEffect(() => {
-    if (isRunning) {
-      pulseAnim.value = withSequence(
-        withSpring(1.1),
-        withSpring(1),
-        withTiming(1, { duration: 1000 })
-      );
-    }
-  }, [time]);
+  // Extract values for the AnimatedCircle
+  const strokeDashoffset = circumference * (1 - progress.value);
+  const currentStrokeWidth = mode === 'pomo' ? 
+    interpolate(
+      progress.value, 
+      [0, 1], 
+      [strokeWidth, strokeWidth * 3]
+    ) : strokeWidth;
+  const currentStroke = mode === 'pomo' ? 
+    progress.value > 0.75 ? '#FF8C42' : 
+    progress.value > 0.5 ? '#FFA66D' : 
+    progress.value > 0.25 ? '#FFC39E' : 
+    '#7EB6FF' : '#7EB6FF';
 
   return (
     <Modal
@@ -102,37 +187,34 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <LinearGradient
-          colors={['#1A2151', '#1B3976', '#2C5F9B']}
+          colors={['#FAFAFA', '#F5F5F5', '#EFEFEF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>{task.title}</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Close Button (X) */}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close" size={24} color="#555" />
+        </TouchableOpacity>
 
+        {/* Toggle Switch */}
         <View style={styles.modeToggle}>
           <Pressable
-            style={[styles.modeButton, mode === 'timer' && styles.modeButtonActive]}
-            onPress={() => setMode('timer')}
+            style={[styles.modeButton, mode === 'pomo' && styles.modeButtonActive]}
+            onPress={() => setMode('pomo')}
           >
             <Text
               style={[
                 styles.modeButtonText,
-                mode === 'timer' && styles.modeButtonTextActive,
+                mode === 'pomo' && styles.modeButtonTextActive,
               ]}
             >
-              Timer
+              Pomo
             </Text>
           </Pressable>
           <Pressable
@@ -153,16 +235,74 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
           </Pressable>
         </View>
 
+        {/* Task Title */}
+        <Text style={styles.taskTitle}>{task.title}</Text>
+
+        {/* Circle Timer */}
         <View style={styles.clockSection}>
-          <Animated.Text style={[styles.clockText, pulseStyle]}>
-            {formatTime(time)}
-          </Animated.Text>
+          <View style={styles.circleContainer}>
+            <Svg width={circleSize} height={circleSize}>
+              {/* Background circle */}
+              <Circle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                stroke="#E0E0E0"
+                strokeWidth={strokeWidth}
+                fill="transparent"
+              />
+              
+              {/* Progress circle */}
+              <AnimatedCircle
+                cx={circleSize / 2}
+                cy={circleSize / 2}
+                r={radius}
+                stroke={currentStroke}
+                strokeWidth={currentStrokeWidth}
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+              />
+              
+              {/* Stopwatch domino markers (for stopwatch mode) */}
+              {mode === 'stopwatch' && Array.from({ length: 60 }).map((_, index) => {
+                const angle = (index * 6 - 90) * (Math.PI / 180);
+                const x1 = circleSize / 2 + (radius - 10) * Math.cos(angle);
+                const y1 = circleSize / 2 + (radius - 10) * Math.sin(angle);
+                const x2 = circleSize / 2 + (radius - 2) * Math.cos(angle);
+                const y2 = circleSize / 2 + (radius - 2) * Math.sin(angle);
+                
+                return (
+                  <Line
+                    key={index}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke={index % 5 === 0 ? "#666" : "#CCC"}
+                    strokeWidth={index % 5 === 0 ? 2 : 1}
+                  />
+                );
+              })}
+            </Svg>
+            
+            <View style={styles.clockTextContainer}>
+              <Text style={styles.clockText}>{formatTime(time)}</Text>
+              <Text style={styles.statusText}>
+                {mode === 'pomo' ? 
+                  (isBreak ? (sessionCount === maxSessionsBeforeLongBreak - 1 ? 'Long Break' : 'Short Break') : 'Focus Time') : 
+                  'Elapsed Time'}
+              </Text>
+            </View>
+          </View>
+
           <View style={styles.clockControls}>
             <TouchableOpacity
               style={[styles.clockButton, styles.resetButton]}
               onPress={handleReset}
             >
-              <Ionicons name="refresh" size={24} color="#fff" />
+              <Ionicons name="refresh" size={24} color="#555" />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.clockButton, styles.startButton]}
@@ -170,19 +310,40 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             >
               <Ionicons
                 name={isRunning ? 'pause' : 'play'}
-                size={24}
-                color="#fff"
+                size={28}
+                color="#FFF"
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="list-outline" size={20} color="#7EB6FF" />
-            <Text style={styles.cardTitle}>Task Details</Text>
-          </View>
-          <Text style={styles.description}>{task.description}</Text>
+        {/* Bottom Menu */}
+        <View style={[styles.bottomMenu, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => setIsDarkMode(!isDarkMode)}
+          >
+            <Ionicons 
+              name={isDarkMode ? "sunny" : "moon"} 
+              size={24} 
+              color="#555" 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => setSoundEnabled(!soundEnabled)}
+          >
+            <Ionicons 
+              name={soundEnabled ? "volume-high" : "volume-mute"} 
+              size={24} 
+              color="#555" 
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.menuItem}>
+            <Ionicons name="settings-outline" size={24} color="#555" />
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -196,57 +357,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-    marginRight: 16,
-  },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute',
+    top: 16 + (Platform.OS === 'ios' ? 44 : 0),
+    left: 16,
+    zIndex: 10,
   },
   modeToggle: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 4,
+    marginTop: 40,
+    marginHorizontal: width * 0.30,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 16,
+    padding: 2,
+    alignSelf: 'center',
   },
   modeButton: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 6,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 14,
   },
   modeButtonActive: {
-    backgroundColor: '#7EB6FF',
+    backgroundColor: '#FF9F1C',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   modeButtonText: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#777',
   },
   modeButtonTextActive: {
-    color: '#1A2151',
+    color: '#FFF',
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#777',
+    marginTop: 16,
+    textAlign: 'center',
   },
   clockSection: {
     alignItems: 'center',
-    marginVertical: 40,
+    justifyContent: 'center',
+    marginTop: 30,
+    flex: 1,
+  },
+  circleContainer: {
+    position: 'relative',
+    width: width * 0.7,
+    height: width * 0.7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clockTextContainer: {
+    position: 'absolute',
+    alignItems: 'center',
   },
   clockText: {
     fontFamily: Platform.select({
@@ -254,15 +424,22 @@ const styles = StyleSheet.create({
       android: 'monospace',
       default: 'monospace',
     }),
-    fontSize: 64,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 2,
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#333',
+    letterSpacing: 1,
+  },
+  statusText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#777',
   },
   clockControls: {
     flexDirection: 'row',
-    marginTop: 24,
+    marginTop: 40,
     gap: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clockButton: {
     width: 56,
@@ -272,33 +449,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   resetButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   startButton: {
     backgroundColor: '#7EB6FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    marginHorizontal: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  cardHeader: {
+  bottomMenu: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    width: '100%',
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#7EB6FF',
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#B8C2CC',
+  menuItem: {
+    padding: 12,
   },
 });

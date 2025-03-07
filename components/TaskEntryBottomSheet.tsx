@@ -7,18 +7,23 @@ import {
   TouchableOpacity,
   Animated,
   Modal,
-  Keyboard,
+  ScrollView,
   Dimensions,
-  KeyboardAvoidingView,
   Platform,
   Alert,
+  LayoutAnimation,
+  UIManager,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabase';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
+const MARGIN = 16; // Margin for the backdrop effect
+const SHEET_MAX_HEIGHT = height * 0.9; // 90% of screen height
 
 interface TaskEntryBottomSheetProps {
   isVisible: boolean;
@@ -33,6 +38,11 @@ const PRIORITY_LEVELS = [
   { level: 3, label: 'Low' },
 ];
 
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   isVisible,
   onClose,
@@ -45,17 +55,27 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isReminderEnabled, setIsReminderEnabled] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [advancedOptionsPosition, setAdvancedOptionsPosition] = useState({ x: 0, y: 0 });
   
   const translateY = useRef(new Animated.Value(height)).current;
   const titleInputRef = useRef<TextInput>(null);
   const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (isVisible) {
       // Reset form state when opening
       resetForm();
       
-      // Open animation
+      // Scale down the background content slightly
+      Animated.timing(scale, {
+        toValue: 0.95,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      
+      // Open animation - come up from the bottom but stop higher
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
@@ -63,17 +83,22 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
-          toValue: 0.5,
+          toValue: 0.6, // Slightly darker backdrop
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
-
-      // Auto focus on the title input
-      setTimeout(() => {
+      ]).start(() => {
+        // Focus after animation without concern for keyboard
         titleInputRef.current?.focus();
-      }, 300);
+      });
     } else {
+      // Reset the background content scale
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      
       // Close animation
       Animated.parallel([
         Animated.timing(translateY, {
@@ -88,6 +113,8 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         }),
       ]).start();
     }
+    
+    // No need for keyboard listeners anymore
   }, [isVisible]);
 
   const resetForm = () => {
@@ -100,7 +127,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   };
 
   const handleClose = () => {
-    if (hasChanges && title.trim() !== '') {
+    if (hasChanges && (title.trim() !== '' || description.trim() !== '')) {
       Alert.alert(
         'Unsaved Changes',
         'You have unsaved changes. Are you sure you want to discard them?',
@@ -109,13 +136,33 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
           { 
             text: 'Discard', 
             style: 'destructive',
-            onPress: () => onClose()
+            onPress: () => safelyClose()
           }
         ]
       );
     } else {
-      onClose();
+      safelyClose();
     }
+  };
+
+  // Function to safely close the bottom sheet
+  const safelyClose = () => {
+    // Close animation
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: height,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Only call onClose after animation completes
+      onClose();
+    });
   };
 
   const handlePriorityChange = () => {
@@ -203,185 +250,280 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationY > 0) {
-        translateY.setValue(event.translationY);
+        // Limit the drag to a reasonable amount to show resistance
+        translateY.setValue(Math.min(event.translationY, height * 0.2));
       }
     })
     .onEnd((event) => {
       if (event.translationY > 100) {
-        handleClose();
+        // If dragged far enough down, check for unsaved changes immediately
+        if (hasChanges && (title.trim() !== '' || description.trim() !== '')) {
+          // Immediately snap back to original position
+          translateY.setValue(0);
+          // Show confirmation dialog immediately
+          handleClose();
+        } else {
+          // No changes, close immediately
+          Animated.timing(translateY, {
+            toValue: height,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => safelyClose());
+        }
       } else {
+        // Otherwise snap back to original position
         Animated.spring(translateY, {
           toValue: 0,
           useNativeDriver: true,
+          damping: 20,
+          stiffness: 300,
         }).start();
       }
-    });
+    })
+    .runOnJS(true);
+
+  // Toggle advanced options menu
+  const handleToggleAdvancedOptions = () => {
+    setShowAdvancedOptions(!showAdvancedOptions);
+  };
+
+  // Add a handler to close the menu when tapping anywhere else
+  const handleBackdropPress = () => {
+    if (showAdvancedOptions) {
+      setShowAdvancedOptions(false);
+    }
+  };
 
   return (
     <Modal
       transparent
       visible={isVisible}
       animationType="none"
-      onRequestClose={handleClose}
+      onRequestClose={handleClose} // This prevents hardware back button from closing directly
       statusBarTranslucent={true}
     >
-      <View style={styles.container}>
+      <SafeAreaView style={styles.modalContainer}>
+        {/* Backdrop with margin effect */}
         <Animated.View 
-          style={[styles.backdrop, { opacity }]} 
-          onTouchStart={handleClose}
+          style={[
+            styles.backdropOuter,
+            { opacity }
+          ]}
         />
         
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.keyboardAvoidingView}
+        {/* Inner content wrapper with margin */}
+        <Animated.View
+          style={[
+            styles.contentWrapper,
+            {
+              transform: [{ scale }],
+            }
+          ]}
         >
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <GestureDetector gesture={panGesture}>
-              <Animated.View 
-                style={[
-                  styles.bottomSheet,
-                  { transform: [{ translateY }] }
-                ]}
-              >
-                <View style={styles.handle} />
-                
-                <View style={styles.content}>
-                  <View style={styles.titleRow}>
-                    <TouchableOpacity 
-                      style={styles.priorityButton}
-                      onPress={handlePriorityChange}
-                    >
-                      <Text style={[
-                        styles.priorityText,
-                        priority === 1 && styles.priorityHigh,
-                        priority === 2 && styles.priorityMedium,
-                        priority === 3 && styles.priorityLow,
-                      ]}>
-                        {priority > 0 ? `!!${priority}` : ''}
-                      </Text>
-                    </TouchableOpacity>
-                    
+          {/* This is a placeholder view for the background content */}
+          <View style={styles.contentPlaceholder} />
+        </Animated.View>
+        
+        {/* Sheet container - now positioned higher */}
+        <GestureHandlerRootView style={styles.gestureContainer}>
+          <GestureDetector gesture={panGesture}>
+            <Animated.View 
+              style={[
+                styles.bottomSheet,
+                { 
+                  transform: [{ translateY }],
+                  maxHeight: SHEET_MAX_HEIGHT,
+                }
+              ]}
+            >
+              <View style={styles.handle} />
+              
+              {/* Add backdrop for closing the advanced options menu when tapping outside */}
+              {showAdvancedOptions && (
+                <TouchableOpacity
+                  style={styles.menuBackdrop}
+                  activeOpacity={1}
+                  onPress={handleBackdropPress}
+                />
+              )}
+              
+              <View style={styles.content}>
+                <View style={styles.headerBar}>
+                  <TouchableOpacity 
+                    style={styles.headerButton}
+                    onPress={handleClose}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.headerButton}
+                    onPress={handleSubmit}
+                  >
+                    <Text style={styles.addButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.combinedInputContainer}>
+                  <View style={styles.titleContainer}>
                     <TextInput
                       ref={titleInputRef}
                       style={styles.titleInput}
-                      placeholder="Enter task title"
+                      placeholder="Title"
                       value={title}
                       onChangeText={handleTitleChange}
                       returnKeyType="next"
+                      placeholderTextColor="#8E8E93"
                     />
                   </View>
                   
-                  <TextInput
-                    style={styles.descriptionInput}
-                    placeholder="Description"
-                    value={description}
-                    onChangeText={(text) => {
-                      setDescription(text);
-                      setHasChanges(true);
-                    }}
-                    multiline
-                    textAlignVertical="top"
-                  />
+                  <View style={styles.divider} />
                   
-                  <View style={styles.metadataRow}>
-                    <TouchableOpacity 
-                      style={styles.metadataButton}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Ionicons name="calendar-outline" size={22} color={date ? "#FF9F1C" : "#8E8E93"} />
-                      <Text style={[styles.metadataText, date && styles.metadataActive]}>
-                        {date ? date.toLocaleDateString() : 'Date'}
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={styles.metadataButton}
-                      onPress={handlePriorityChange}
-                    >
-                      <Ionicons name="flag-outline" size={22} color={priority > 0 ? "#FF9F1C" : "#8E8E93"} />
-                      <Text style={[styles.metadataText, priority > 0 && styles.metadataActive]}>
-                        {priority > 0 ? `P${priority}` : 'Priority'}
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={styles.metadataButton}
-                      onPress={() => {
-                        setIsReminderEnabled(!isReminderEnabled);
+                  <ScrollView 
+                    style={styles.descriptionScrollView}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <TextInput
+                      style={styles.descriptionInput}
+                      placeholder="Description"
+                      value={description}
+                      onChangeText={(text) => {
+                        setDescription(text);
                         setHasChanges(true);
                       }}
-                    >
-                      <Ionicons name="alarm-outline" size={22} color={isReminderEnabled ? "#FF9F1C" : "#8E8E93"} />
-                      <Text style={[styles.metadataText, isReminderEnabled && styles.metadataActive]}>
-                        Reminder
-                      </Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.metadataButton}>
-                      <Ionicons name="ellipsis-horizontal" size={22} color="#8E8E93" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={date || new Date()}
-                      mode="date"
-                      is24Hour={true}
-                      display="default"
-                      onChange={handleDateChange}
+                      multiline
+                      textAlignVertical="top"
+                      placeholderTextColor="#8E8E93"
                     />
-                  )}
+                  </ScrollView>
+                </View>
+                
+                <View style={styles.metadataRow}>
+                  <TouchableOpacity 
+                    style={styles.metadataButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={22} color={date ? "#FF9F1C" : "#8E8E93"} />
+                    <Text style={[styles.metadataText, date && styles.metadataActive]}>
+                      {date ? date.toLocaleDateString() : 'Date'}
+                    </Text>
+                  </TouchableOpacity>
                   
-                  <View style={styles.actionBar}>
+                  <TouchableOpacity 
+                    style={styles.metadataButton}
+                    onPress={handlePriorityChange}
+                  >
+                    <Ionicons name="flag-outline" size={22} color={priority > 0 ? "#FF9F1C" : "#8E8E93"} />
+                    <Text style={[styles.metadataText, priority > 0 && styles.metadataActive]}>
+                      {priority > 0 ? `P${priority}` : 'Priority'}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.metadataButton}
+                    onPress={() => {
+                      setIsReminderEnabled(!isReminderEnabled);
+                      setHasChanges(true);
+                    }}
+                  >
+                    <Ionicons name="alarm-outline" size={22} color={isReminderEnabled ? "#FF9F1C" : "#8E8E93"} />
+                    <Text style={[styles.metadataText, isReminderEnabled && styles.metadataActive]}>
+                      Reminder
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <View>
                     <TouchableOpacity 
-                      style={styles.cancelButton}
-                      onPress={handleClose}
+                      style={styles.metadataButton}
+                      onPress={handleToggleAdvancedOptions}
                     >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                      <Ionicons name="ellipsis-horizontal" size={22} color="#8E8E93" />
+                      <Text style={styles.metadataText}>More</Text>
                     </TouchableOpacity>
                     
-                    <TouchableOpacity 
-                      style={styles.submitButton}
-                      onPress={handleSubmit}
-                    >
-                      <Ionicons name="checkmark" size={24} color="#fff" />
-                    </TouchableOpacity>
+                    {showAdvancedOptions && (
+                      <View style={[
+                        styles.advancedOptionsMenu,
+                        { right: 0, bottom: 60 } // Position above the button
+                      ]}>
+                        <TouchableOpacity style={styles.advancedOption}>
+                          <Ionicons name="time-outline" size={18} color="#8E8E93" />
+                          <Text style={styles.advancedOptionText}>Set due time</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.advancedOption}>
+                          <Ionicons name="repeat-outline" size={18} color="#8E8E93" />
+                          <Text style={styles.advancedOptionText}>Make recurring</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.advancedOption}>
+                          <Ionicons name="list-outline" size={18} color="#8E8E93" />
+                          <Text style={styles.advancedOptionText}>Add subtasks</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.advancedOption}>
+                          <Ionicons name="bookmark-outline" size={18} color="#8E8E93" />
+                          <Text style={styles.advancedOptionText}>Add tags</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 </View>
-              </Animated.View>
-            </GestureDetector>
-          </GestureHandlerRootView>
-        </KeyboardAvoidingView>
-      </View>
+                
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={date || new Date()}
+                    mode="date"
+                    is24Hour={true}
+                    display="default"
+                    onChange={handleDateChange}
+                  />
+                )}
+              </View>
+            </Animated.View>
+          </GestureDetector>
+        </GestureHandlerRootView>
+      </SafeAreaView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  backdrop: {
+  backdropOuter: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000',
   },
-  keyboardAvoidingView: {
-    width: '100%',
+  contentWrapper: {
+    flex: 1,
+    margin: MARGIN,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  contentPlaceholder: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  gestureContainer: {
     position: 'absolute',
+    left: 0,
+    right: 0,
     bottom: 0,
+    top: Platform.OS === 'ios' ? StatusBar.currentHeight || 44 : 0, // Leave space for status bar
   },
   bottomSheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    minHeight: 300,
     paddingBottom: Platform.OS === 'ios' ? 30 : 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 10,
+    height: '100%',
   },
   handle: {
     width: 36,
@@ -393,46 +535,53 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    flex: 1,
   },
-  titleRow: {
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  combinedInputContainer: {
+    borderWidth: 1.5,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  priorityButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  priorityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#8E8E93',
-  },
-  priorityHigh: {
-    color: '#FF3B30',
-  },
-  priorityMedium: {
-    color: '#FF9F1C',
-  },
-  priorityLow: {
-    color: '#52C1C4',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
   titleInput: {
     flex: 1,
     height: 40,
     fontSize: 16,
     fontWeight: '500',
+    textAlign: 'left',
+    paddingHorizontal: 0,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#EEEEEE',
+    marginHorizontal: 0, // Remove horizontal margin
+  },
+  descriptionScrollView: {
+    maxHeight: Math.min(40 * 10, height * 0.3), // Set maxHeight to 10 lines or 30% of screen height
   },
   descriptionInput: {
     fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    borderRadius: 8,
     padding: 12,
     minHeight: 80,
-    marginBottom: 16,
+    textAlignVertical: 'top',
+    textAlign: 'left',
   },
   metadataRow: {
     flexDirection: 'row',
@@ -445,6 +594,7 @@ const styles = StyleSheet.create({
   metadataButton: {
     alignItems: 'center',
     marginHorizontal: 4,
+    position: 'relative',
   },
   metadataText: {
     fontSize: 12,
@@ -455,31 +605,43 @@ const styles = StyleSheet.create({
     color: '#FF9F1C',
     fontWeight: '500',
   },
-  actionBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  cancelButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
   cancelButtonText: {
     color: '#8E8E93',
     fontWeight: '500',
+    fontSize: 16,
   },
-  submitButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
+  addButtonText: {
+    color: '#FF9F1C',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  // New hover menu styles
+  advancedOptionsMenu: {
+    position: 'absolute',
+    width: 180,
+    backgroundColor: 'white',
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    paddingVertical: 8,
+    zIndex: 1000,
+  },
+  advancedOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  advancedOptionText: {
+    fontSize: 14,
+    marginLeft: 12,
+  },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 100,
   },
 });
