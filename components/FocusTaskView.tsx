@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Platform,
   Dimensions,
   TouchableOpacity,
+  useColorScheme,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +21,8 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
+import { useTheme } from '../contexts/ThemeContext';
+import { Audio } from 'expo-av';
 
 interface FocusTaskViewProps {
   visible: boolean;
@@ -43,6 +47,33 @@ const formatTime = (totalSeconds: number) => {
 // Create the animated circle component
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
+// Theme colors
+const lightTheme = {
+  background: ['#FAFAFA', '#F5F5F5', '#EFEFEF'] as const,
+  text: '#333',
+  subText: '#777',
+  iconColor: '#555',
+  modeToggleBg: 'rgba(0, 0, 0, 0.05)',
+  resetButtonBg: 'rgba(0, 0, 0, 0.05)',
+  startButtonBg: '#FF9F1C',
+  circleBackground: '#E0E0E0',
+  dominoMarkerDark: '#666',
+  dominoMarkerLight: '#CCC',
+};
+
+const darkTheme = {
+  background: ['#121212', '#1E1E1E', '#252525'] as const,
+  text: '#E0E0E0',
+  subText: '#AAAAAA',
+  iconColor: '#BBBBBB',
+  modeToggleBg: 'rgba(255, 255, 255, 0.1)',
+  resetButtonBg: 'rgba(255, 255, 255, 0.1)',
+  startButtonBg: '#FF9F1C', // Keep accent color the same
+  circleBackground: '#444444',
+  dominoMarkerDark: '#AAAAAA',
+  dominoMarkerLight: '#666666',
+};
+
 export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<Mode>('pomo');
@@ -55,8 +86,27 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const [shortBreakDuration, setShortBreakDuration] = useState(5 * 60);
   const [longBreakDuration, setLongBreakDuration] = useState(15 * 60);
   const maxSessionsBeforeLongBreak = 4;
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Store separate state for pomo and stopwatch modes
+  const [pomoTime, setPomoTime] = useState(workDuration);
+  const [pomoTotalTime, setPomoTotalTime] = useState(workDuration);
+  const [stopwatchTime, setStopwatchTime] = useState(0);
+  const [stopwatchTotalTime, setStopwatchTotalTime] = useState(60);
+  
+  // Store separate progress values for each mode
+  const [pomoProgress, setPomoProgress] = useState(0);
+  const [stopwatchProgress, setStopwatchProgress] = useState(0);
+  
+  // Sound reference and status
+  const tickingSound = useRef<Audio.Sound | null>(null);
+  const [soundLoaded, setSoundLoaded] = useState(false);
+  
+  // Use the theme context instead of local state
+  const { isDarkMode, toggleTheme } = useTheme();
+  
+  // Get the current theme based on isDarkMode state
+  const theme = isDarkMode ? darkTheme : lightTheme;
   
   // Progress circle animation
   const progress = useSharedValue(0);
@@ -65,38 +115,265 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const radius = (circleSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
+  // Initialize audio session
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        console.log('Setting up audio session...');
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+          allowsRecordingIOS: false,
+        });
+        console.log('Audio session set up successfully');
+      } catch (error) {
+        console.error('Failed to set audio mode', error);
+      }
+    };
+    
+    setupAudio();
+  }, []);
+
+  // Load and unload sound
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        console.log('Loading ticking sound...');
+        
+        // Unload any existing sound first
+        if (tickingSound.current) {
+          await tickingSound.current.unloadAsync();
+          tickingSound.current = null;
+        }
+        
+        const soundObject = new Audio.Sound();
+        await soundObject.loadAsync(require('../assets/sounds/tictac.wav'));
+        await soundObject.setIsLoopingAsync(true);
+        
+        tickingSound.current = soundObject;
+        setSoundLoaded(true);
+        console.log('Ticking sound loaded successfully');
+      } catch (error: any) {
+        console.error('Failed to load sound', error);
+        Alert.alert('Sound Error', 'Failed to load ticking sound: ' + (error?.message || 'Unknown error'));
+      }
+    };
+
+    if (visible) {
+      loadSound();
+    }
+
+    return () => {
+      const unloadSound = async () => {
+        console.log('Unloading sound...');
+        if (tickingSound.current) {
+          try {
+            await tickingSound.current.stopAsync();
+            await tickingSound.current.unloadAsync();
+            tickingSound.current = null;
+            setSoundLoaded(false);
+            console.log('Sound unloaded successfully');
+          } catch (error) {
+            console.error('Error unloading sound', error);
+          }
+        }
+      };
+      
+      unloadSound();
+    };
+  }, [visible]);
+
+  // Play or pause ticking sound based on isRunning and soundEnabled
+  useEffect(() => {
+    const manageTicking = async () => {
+      if (!tickingSound.current || !soundLoaded) {
+        console.log('Sound not loaded yet, cannot play/pause');
+        return;
+      }
+      
+      try {
+        if (isRunning && soundEnabled) {
+          console.log('Starting to play ticking sound...');
+          const status = await tickingSound.current.getStatusAsync();
+          
+          if (status.isLoaded) {
+            if (!status.isPlaying) {
+              console.log('Playing sound now');
+              // Add 100ms latency before playing sound
+              await new Promise(resolve => setTimeout(resolve, 100));
+              await tickingSound.current.playAsync();
+              const playStatus = await tickingSound.current.getStatusAsync();
+              console.log('Sound playing status:', playStatus.isLoaded && playStatus.isPlaying);
+            } else {
+              console.log('Sound is already playing');
+            }
+          } else {
+            console.log('Sound is not loaded, cannot play');
+          }
+        } else {
+          console.log('Pausing ticking sound...');
+          const status = await tickingSound.current.getStatusAsync();
+          
+          if (status.isLoaded && status.isPlaying) {
+            console.log('Pausing sound now');
+            await tickingSound.current.pauseAsync();
+          } else {
+            console.log('Sound is not playing, no need to pause');
+          }
+        }
+      } catch (error: any) {
+        console.error('Error managing ticking sound', error);
+        Alert.alert('Sound Error', 'Error playing/pausing sound: ' + (error?.message || 'Unknown error'));
+      }
+    };
+    
+    manageTicking();
+  }, [isRunning, soundEnabled, soundLoaded]);
+
+  // Handle sound toggle
+  const handleSoundToggle = async () => {
+    const newSoundEnabled = !soundEnabled;
+    setSoundEnabled(newSoundEnabled);
+    
+    console.log('Sound toggled to:', newSoundEnabled);
+    
+    // Play a short test sound when enabling to verify sound works
+    if (newSoundEnabled && tickingSound.current && soundLoaded && !isRunning) {
+      try {
+        console.log('Playing test sound...');
+        await tickingSound.current.playAsync();
+        setTimeout(async () => {
+          if (tickingSound.current) {
+            await tickingSound.current.pauseAsync();
+            console.log('Test sound stopped');
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Error playing test sound', error);
+      }
+    }
+  };
+
+  // Initialize the component once
+  useEffect(() => {
+    // Initial setup - only runs once when component mounts
+    setPomoTime(workDuration);
+    setPomoTotalTime(workDuration);
+    setStopwatchTime(0);
+    setStopwatchTotalTime(60);
+    setPomoProgress(0);
+    setStopwatchProgress(0);
+    
+    // Set initial values based on mode
+    if (mode === 'pomo') {
+      setTime(pomoTime);
+      setTotalTime(pomoTotalTime);
+      progress.value = pomoProgress;
+    } else {
+      setTime(stopwatchTime);
+      setTotalTime(stopwatchTotalTime);
+      progress.value = stopwatchProgress;
+    }
+    
+    // Update progress value
+    updateProgressValue();
+  }, []);
+
+  // Handle closing the modal - reset all states
+  const handleClose = () => {
+    // Stop sound when closing
+    if (tickingSound.current && soundLoaded) {
+      console.log('Stopping sound on close');
+      tickingSound.current.stopAsync().catch(err => console.error('Error stopping sound', err));
+    }
+    
+    // Reset all states before closing
+    setIsRunning(false);
+    setIsBreak(false);
+    setSessionCount(0);
+    setPomoTime(workDuration);
+    setPomoTotalTime(workDuration);
+    setStopwatchTime(0);
+    setStopwatchTotalTime(60);
+    setPomoProgress(0);
+    setStopwatchProgress(0);
+    progress.value = 0;
+    
+    // Call the original onClose
+    onClose();
+  };
+
+  // Update progress value based on current mode and time
+  const updateProgressValue = () => {
+    let newProgressValue = 0;
+    
+    if (mode === 'pomo') {
+      newProgressValue = 1 - time / totalTime;
+      setPomoProgress(newProgressValue);
+    } else if (mode === 'stopwatch') {
+      // For stopwatch, reset progress every minute
+      const secondsInCurrentMinute = time % 60;
+      newProgressValue = secondsInCurrentMinute / 60;
+      setStopwatchProgress(newProgressValue);
+    }
+    
+    // Use a shorter duration for smoother updates during active timing
+    const animationDuration = isRunning ? 100 : 300;
+    progress.value = withTiming(newProgressValue, { duration: animationDuration });
+  };
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRunning) {
       interval = setInterval(() => {
-        setTime((prev) => (mode === 'stopwatch' ? prev + 1 : prev - 1));
+        setTime((prev) => {
+          const newTime = mode === 'stopwatch' ? prev + 1 : prev - 1;
+          
+          // Update the mode-specific time state
+          if (mode === 'pomo') {
+            setPomoTime(newTime);
+          } else {
+            setStopwatchTime(newTime);
+          }
+          
+          return newTime;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
   }, [isRunning, mode]);
 
+  // Handle mode toggle without resetting the clock
   useEffect(() => {
-    if (mode === 'pomo') {
-      setTime(workDuration);
-      setTotalTime(workDuration);
-    } else {
-      setTime(0);
-      setTotalTime(60); // For stopwatch, track progress in 1-minute increments
-    }
+    // Stop the timer when switching modes
     setIsRunning(false);
-    progress.value = 0;
-  }, [mode, workDuration]);
+    
+    // Switch to the appropriate saved state
+    if (mode === 'pomo') {
+      setTime(pomoTime);
+      setTotalTime(pomoTotalTime);
+      
+      // Calculate and apply the correct progress angle based on current time
+      const newProgress = 1 - pomoTime / pomoTotalTime;
+      setPomoProgress(newProgress);
+      progress.value = withTiming(newProgress, { duration: 300 });
+    } else {
+      setTime(stopwatchTime);
+      setTotalTime(stopwatchTotalTime);
+      
+      // Calculate and apply the correct progress angle based on current time
+      const secondsInCurrentMinute = stopwatchTime % 60;
+      const newProgress = secondsInCurrentMinute / 60;
+      setStopwatchProgress(newProgress);
+      progress.value = withTiming(newProgress, { duration: 300 });
+    }
+  }, [mode]);
 
   useEffect(() => {
     // Update progress for circle
-    if (mode === 'pomo') {
-      progress.value = withTiming(1 - time / totalTime, { duration: 300 });
-    } else if (mode === 'stopwatch') {
-      // For stopwatch, reset progress every minute
-      const currentMinute = Math.floor(time / 60);
-      const secondsInCurrentMinute = time % 60;
-      progress.value = withTiming(secondsInCurrentMinute / 60, { duration: 300 });
-    }
+    updateProgressValue();
     
     // Handle completion of timer
     if (isRunning && time === 0 && mode === 'pomo') {
@@ -104,18 +381,42 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         setSessionCount((prev) => prev + 1);
         if (sessionCount + 1 < maxSessionsBeforeLongBreak) {
           setIsBreak(true);
-          setTime(shortBreakDuration);
-          setTotalTime(shortBreakDuration);
+          const newTime = shortBreakDuration;
+          setTime(newTime);
+          setPomoTime(newTime);
+          const newTotalTime = shortBreakDuration;
+          setTotalTime(newTotalTime);
+          setPomoTotalTime(newTotalTime);
+          // Reset progress for new break session
+          const newProgress = 0;
+          setPomoProgress(newProgress);
+          progress.value = newProgress;
         } else {
           setIsBreak(true);
           setSessionCount(0);
-          setTime(longBreakDuration);
-          setTotalTime(longBreakDuration);
+          const newTime = longBreakDuration;
+          setTime(newTime);
+          setPomoTime(newTime);
+          const newTotalTime = longBreakDuration;
+          setTotalTime(newTotalTime);
+          setPomoTotalTime(newTotalTime);
+          // Reset progress for new break session
+          const newProgress = 0;
+          setPomoProgress(newProgress);
+          progress.value = newProgress;
         }
       } else {
         setIsBreak(false);
-        setTime(workDuration);
-        setTotalTime(workDuration);
+        const newTime = workDuration;
+        setTime(newTime);
+        setPomoTime(newTime);
+        const newTotalTime = workDuration;
+        setTotalTime(newTotalTime);
+        setPomoTotalTime(newTotalTime);
+        // Reset progress for new work session
+        const newProgress = 0;
+        setPomoProgress(newProgress);
+        progress.value = newProgress;
       }
     }
   }, [time, isRunning, mode, sessionCount, isBreak]);
@@ -128,19 +429,38 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   };
 
   const handleReset = () => {
-    setIsRunning(false);
-    setIsBreak(false);
-    setSessionCount(0);
-    
-    if (mode === 'pomo') {
-      setTime(workDuration);
-      setTotalTime(workDuration);
-    } else {
-      setTime(0);
-      setTotalTime(60);
+    // Pause sound when resetting
+    if (tickingSound.current && isRunning) {
+      tickingSound.current.pauseAsync();
     }
     
-    progress.value = 0;
+    setIsRunning(false);
+    
+    if (mode === 'pomo') {
+      setIsBreak(false);
+      setSessionCount(0);
+      const newTime = workDuration;
+      setTime(newTime);
+      setPomoTime(newTime);
+      const newTotalTime = workDuration;
+      setTotalTime(newTotalTime);
+      setPomoTotalTime(newTotalTime);
+      // Reset progress for pomo mode
+      const newProgress = 0;
+      setPomoProgress(newProgress);
+      progress.value = newProgress;
+    } else {
+      const newTime = 0;
+      setTime(newTime);
+      setStopwatchTime(newTime);
+      const newTotalTime = 60;
+      setTotalTime(newTotalTime);
+      setStopwatchTotalTime(newTotalTime);
+      // Reset progress for stopwatch mode
+      const newProgress = 0;
+      setStopwatchProgress(newProgress);
+      progress.value = newProgress;
+    }
   };
 
   // Circle progress animation
@@ -183,11 +503,11 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
       animationType="fade"
       transparent
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <LinearGradient
-          colors={['#FAFAFA', '#F5F5F5', '#EFEFEF']}
+          colors={theme.background}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -196,14 +516,14 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         {/* Close Button (X) */}
         <TouchableOpacity
           style={styles.closeButton}
-          onPress={onClose}
+          onPress={handleClose}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="close" size={24} color="#555" />
+          <Ionicons name="close" size={24} color={theme.iconColor} />
         </TouchableOpacity>
 
         {/* Toggle Switch */}
-        <View style={styles.modeToggle}>
+        <View style={[styles.modeToggle, { backgroundColor: theme.modeToggleBg }]}>
           <Pressable
             style={[styles.modeButton, mode === 'pomo' && styles.modeButtonActive]}
             onPress={() => setMode('pomo')}
@@ -211,6 +531,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             <Text
               style={[
                 styles.modeButtonText,
+                { color: theme.subText },
                 mode === 'pomo' && styles.modeButtonTextActive,
               ]}
             >
@@ -227,6 +548,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             <Text
               style={[
                 styles.modeButtonText,
+                { color: theme.subText },
                 mode === 'stopwatch' && styles.modeButtonTextActive,
               ]}
             >
@@ -236,7 +558,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         </View>
 
         {/* Task Title */}
-        <Text style={styles.taskTitle}>{task.title}</Text>
+        <Text style={[styles.taskTitle, { color: theme.subText }]}>{task.title}</Text>
 
         {/* Circle Timer */}
         <View style={styles.clockSection}>
@@ -247,7 +569,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
                 cx={circleSize / 2}
                 cy={circleSize / 2}
                 r={radius}
-                stroke="#E0E0E0"
+                stroke={theme.circleBackground}
                 strokeWidth={strokeWidth}
                 fill="transparent"
               />
@@ -280,7 +602,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke={index % 5 === 0 ? "#666" : "#CCC"}
+                    stroke={index % 5 === 0 ? theme.dominoMarkerDark : theme.dominoMarkerLight}
                     strokeWidth={index % 5 === 0 ? 2 : 1}
                   />
                 );
@@ -288,8 +610,8 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             </Svg>
             
             <View style={styles.clockTextContainer}>
-              <Text style={styles.clockText}>{formatTime(time)}</Text>
-              <Text style={styles.statusText}>
+              <Text style={[styles.clockText, { color: theme.text }]}>{formatTime(time)}</Text>
+              <Text style={[styles.statusText, { color: theme.subText }]}>
                 {mode === 'pomo' ? 
                   (isBreak ? (sessionCount === maxSessionsBeforeLongBreak - 1 ? 'Long Break' : 'Short Break') : 'Focus Time') : 
                   'Elapsed Time'}
@@ -299,13 +621,13 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
 
           <View style={styles.clockControls}>
             <TouchableOpacity
-              style={[styles.clockButton, styles.resetButton]}
+              style={[styles.clockButton, styles.resetButton, { backgroundColor: theme.resetButtonBg }]}
               onPress={handleReset}
             >
-              <Ionicons name="refresh" size={24} color="#555" />
+              <Ionicons name="refresh" size={24} color={theme.iconColor} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.clockButton, styles.startButton]}
+              style={[styles.clockButton, styles.startButton, { backgroundColor: theme.startButtonBg }]}
               onPress={handleStartStop}
             >
               <Ionicons
@@ -321,28 +643,28 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         <View style={[styles.bottomMenu, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => setIsDarkMode(!isDarkMode)}
+            onPress={toggleTheme}
           >
             <Ionicons 
               name={isDarkMode ? "sunny" : "moon"} 
               size={24} 
-              color="#555" 
+              color={theme.iconColor} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => setSoundEnabled(!soundEnabled)}
+            onPress={handleSoundToggle}
           >
             <Ionicons 
               name={soundEnabled ? "volume-high" : "volume-mute"} 
               size={24} 
-              color="#555" 
+              color={theme.iconColor} 
             />
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.menuItem}>
-            <Ionicons name="settings-outline" size={24} color="#555" />
+            <Ionicons name="settings-outline" size={24} color={theme.iconColor} />
           </TouchableOpacity>
         </View>
       </View>
@@ -367,7 +689,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 40,
     marginHorizontal: width * 0.30,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 16,
     padding: 2,
     alignSelf: 'center',
@@ -452,7 +773,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   startButton: {
-    backgroundColor: '#7EB6FF',
+    backgroundColor: '#FF9F1C',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,

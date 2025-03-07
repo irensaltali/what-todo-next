@@ -7,9 +7,14 @@ import { format } from 'date-fns';
 interface StatusBarProps {
   showTime?: boolean;
   showBorder?: boolean;
+  isDarkMode?: boolean;
 }
 
-export function StatusBar({ showTime = false, showBorder = true }: StatusBarProps) {
+export function StatusBar({ 
+  showTime = false, 
+  showBorder = true, 
+  isDarkMode = false 
+}: StatusBarProps) {
   const insets = useSafeAreaInsets();
   const [time, setTime] = React.useState(new Date());
 
@@ -25,16 +30,17 @@ export function StatusBar({ showTime = false, showBorder = true }: StatusBarProp
 
   return (
     <>
-      <ExpoStatusBar style="dark" backgroundColor="#FFFFFF" />
+      <ExpoStatusBar style={isDarkMode ? "light" : "dark"} backgroundColor={isDarkMode ? "#121212" : "#FFFFFF"} />
       <View 
         style={[
           styles.container, 
           { paddingTop: insets.top },
-          showBorder && styles.borderBottom
+          showBorder && (isDarkMode ? styles.borderBottomDark : styles.borderBottom),
+          isDarkMode && styles.containerDark
         ]}
       >
         {showTime && (
-          <Text style={styles.timeText}>
+          <Text style={[styles.timeText, isDarkMode && styles.timeTextDark]}>
             {format(time, 'h:mm a')}
           </Text>
         )}
@@ -61,13 +67,34 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  containerDark: {
+    backgroundColor: '#121212',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 1,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
   borderBottom: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  borderBottomDark: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   timeText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#1C1C1E',
+  },
+  timeTextDark: {
+    color: '#E0E0E0',
   },
 });

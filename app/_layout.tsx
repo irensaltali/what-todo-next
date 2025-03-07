@@ -4,6 +4,7 @@ import { useAuth } from '../lib/useAuth';
 import { StoreProvider } from '../lib/store/StoreContext';
 import { TaskEntryProvider, useTaskEntry } from '../contexts/TaskEntryContext';
 import { TaskEntryBottomSheet } from '../components/TaskEntryBottomSheet';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 declare global {
   interface Window {
@@ -47,18 +48,20 @@ export default function RootLayout() {
   }
 
   return (
-    <StoreProvider>
-      <TaskEntryProvider>
-        {!session ? (
-          // If there's no session, only show auth screens
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-          </Stack>
-        ) : (
-          // If there is a session, show protected screens with task entry
-          <AppWithTaskEntry />
-        )}
-      </TaskEntryProvider>
-    </StoreProvider>
+    <ThemeProvider>
+      <StoreProvider>
+        <TaskEntryProvider>
+          {!session ? (
+            // If there's no session, only show auth screens
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+            </Stack>
+          ) : (
+            // If there is a session, show protected screens with task entry
+            <AppWithTaskEntry />
+          )}
+        </TaskEntryProvider>
+      </StoreProvider>
+    </ThemeProvider>
   );
 }
