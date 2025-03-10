@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { FocusTaskView } from './FocusTaskView';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface FeaturedTaskCardProps {
   taskTitle: string;
@@ -25,6 +26,7 @@ const FeaturedTaskCard: React.FC<FeaturedTaskCardProps> = ({
     ? taskDescription.substring(0, 80) + '...' 
     : taskDescription;
   const visibleCategories = categories.slice(0, 3);
+  const { t } = useTranslation();
 
   const handleFocusPress = () => {
     setShowFocusView(true);
@@ -41,12 +43,12 @@ const FeaturedTaskCard: React.FC<FeaturedTaskCardProps> = ({
       >
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.featuredLabel}>Featured Task</Text>
+            <Text style={styles.featuredLabel}>{t('task.featured_task')}</Text>
             <Text style={styles.taskTitle}>{taskTitle}</Text>
           </View>
           <View style={styles.priorityBadge}>
             <Ionicons name="star" size={12} color="#7EB6FF" />
-            <Text style={styles.priorityText}>Priority</Text>
+            <Text style={styles.priorityText}>{t('task.priority')}</Text>
           </View>
         </View>
 
@@ -72,7 +74,7 @@ const FeaturedTaskCard: React.FC<FeaturedTaskCardProps> = ({
             onPress={handleFocusPress}
           >
             <Ionicons name="flash-outline" size={16} color="#7EB6FF" />
-            <Text style={styles.focusButtonText}>Focus</Text>
+            <Text style={styles.focusButtonText}>{t('common.focus')}</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>

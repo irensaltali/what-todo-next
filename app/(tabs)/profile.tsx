@@ -16,6 +16,7 @@ import { getAvatarUrl } from '@/lib/avatarUrl';
 import { format } from 'date-fns';
 import useProfileStore from '@/store/profileStore';
 import { Profile } from '@/store/models/profile';
+import { useTranslation } from 'react-i18next';
 
 interface TaskCounts {
   inProcess: number;
@@ -44,6 +45,7 @@ export default function ProfileScreen() {
     completed: 0,
   });
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { t } = useTranslation();
 
   useEffect(() => {
     initializeProfile();
@@ -112,7 +114,7 @@ export default function ProfileScreen() {
     router.replace('/sign-in');
   };
 
-  const MenuItem = ({ icon, label, route }: { icon: string; label: string; route: string }) => (
+  const MenuItem = ({ icon, label, route, translationKey }: { icon: string; label: string; route: string, translationKey?: string }) => (
     <Pressable
       style={styles.menuItem}
       onPress={() => router.push(`/(settings)/${route}`)}
@@ -120,7 +122,7 @@ export default function ProfileScreen() {
       <View style={styles.menuItemContent}>
         <View style={styles.menuItemLeft}>
           <Ionicons name={icon as any} size={24} color="#212529" />
-          <Text style={styles.menuItemLabel}>{label}</Text>
+          <Text style={styles.menuItemLabel}>{translationKey ? t(translationKey) : label}</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#6C757D" />
       </View>
@@ -142,7 +144,7 @@ export default function ProfileScreen() {
         <View style={styles.metricsRow}>
           <View style={styles.metric}>
             <Text style={styles.metricNumber}>{taskCounts.inProcess}</Text>
-            <Text style={styles.metricLabel}>In Process</Text>
+            <Text style={styles.metricLabel}>{t('profile.in_process')}</Text>
           </View>
           
           <Image
@@ -152,7 +154,7 @@ export default function ProfileScreen() {
           
           <View style={styles.metric}>
             <Text style={styles.metricNumber}>{taskCounts.completed}</Text>
-            <Text style={styles.metricLabel}>Completed</Text>
+            <Text style={styles.metricLabel}>{t('profile.completed')}</Text>
           </View>
         </View>
         <Text style={styles.userName}>{profile.name || 'User'}</Text>
@@ -162,22 +164,22 @@ export default function ProfileScreen() {
         style={styles.editButton}
         onPress={() => router.push('/profile/edit')}
       >
-        <Text style={styles.editButtonText}>Edit Profile</Text>
+        <Text style={styles.editButtonText}>{t('profile.edit_profile')}</Text>
       </Pressable>
 
       <View style={styles.menuSection}>
-        <MenuItem icon="notifications-outline" label="Notifications" route="notifications" />
-        <MenuItem icon="shield-checkmark-outline" label="Security" route="security" />
-        <MenuItem icon="globe-outline" label="Language & Region" route="language" />
-        <MenuItem icon="star-outline" label="Go Premium" route="premium" />
-        <MenuItem icon="help-circle-outline" label="Help Center" route="help" />
+        <MenuItem icon="notifications-outline" label="Notifications" route="notifications" translationKey="profile.notifications" />
+        <MenuItem icon="shield-checkmark-outline" label="Security" route="security" translationKey="profile.security" />
+        <MenuItem icon="globe-outline" label="Language & Region" route="language" translationKey="profile.language_region" />
+        <MenuItem icon="star-outline" label="Go Premium" route="premium" translationKey="profile.go_premium" />
+        <MenuItem icon="help-circle-outline" label="Help Center" route="help" translationKey="profile.help_center" />
       </View>
 
       <Pressable 
         style={styles.signOutButton}
         onPress={handleSignOut}
       >
-        <Text style={styles.signOutText}>Sign Out</Text>
+        <Text style={styles.signOutText}>{t('profile.sign_out')}</Text>
       </Pressable>
     </ScrollView>
   );

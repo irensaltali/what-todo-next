@@ -5,10 +5,12 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { useAuth } from '@/lib/useAuth';
 import { Redirect } from 'expo-router';
 import { useTaskEntry } from '@/contexts/TaskEntryContext';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
   const { session, loading } = useAuth();
   const { showTaskEntry } = useTaskEntry();
+  const { t } = useTranslation();
 
   // If not authenticated, redirect to sign in
   if (!session && !loading) {
@@ -43,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -52,7 +54,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="task-list"
         options={{
-          title: 'Tasks',
+          title: t('tabs.tasks'),
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="list-outline" size={size} color={color} />
           ),
@@ -61,7 +63,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),

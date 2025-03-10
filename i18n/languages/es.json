@@ -1,0 +1,58 @@
+{
+  "greeting": "¡Hola, {{name}}!",
+  "welcome": "¡Bienvenido, {{name}}!",
+  "items": "Tienes {{count}} elemento",
+  "items_plural": "Tienes {{count}} elementos",
+  "change_language": "Cambiar idioma",
+  
+  "home": {
+    "subtitle": "Vamos a encontrar qué hacer a continuación",
+    "status_overview": "Resumen de estado",
+    "upcoming": "Próximamente",
+    "empty_tasks": "No hay tareas próximas. ¡Añade una!",
+    "tasks": "Tareas"
+  },
+  
+  "status": {
+    "ongoing": "En curso",
+    "inprocess": "En proceso",
+    "canceled": "Cancelado",
+    "completed": "Completado"
+  },
+  
+  "profile": {
+    "in_process": "En proceso",
+    "completed": "Completado",
+    "edit_profile": "Editar perfil",
+    "notifications": "Notificaciones",
+    "security": "Seguridad",
+    "language_region": "Idioma y Región",
+    "go_premium": "Hazte Premium",
+    "help_center": "Centro de ayuda",
+    "sign_out": "Cerrar sesión"
+  },
+  
+  "common": {
+    "focus": "Enfocar",
+    "settings": "Ajustes"
+  },
+  
+  "task": {
+    "featured_task": "Tarea destacada",
+    "priority": "Prioridad"
+  },
+  
+  "tabs": {
+    "home": "Inicio",
+    "tasks": "Tareas",
+    "profile": "Perfil"
+  },
+  
+  "task_list": {
+    "title": "Tareas",
+    "uncategorized": "Sin categoría",
+    "no_tasks": "No se encontraron tareas",
+    "archive": "Archivar",
+    "delete": "Eliminar"
+  }
+} 

@@ -3,5 +3,56 @@
   "welcome": "Hoş geldiniz, {{name}}!",
   "items": "Sepetinizde {{count}} ürün var",
   "items_plural": "Sepetinizde {{count}} ürün var",
-  "change_language": "Dili Değiştir"
+  "change_language": "Dili Değiştir",
+  
+  "home": {
+    "subtitle": "Sırada Ne Var Bulalım",
+    "status_overview": "Durum Genel Bakışı",
+    "upcoming": "Yaklaşan",
+    "empty_tasks": "Yaklaşan görev yok. Ekleyin!",
+    "tasks": "Görevler"
+  },
+  
+  "status": {
+    "ongoing": "Devam Ediyor",
+    "inprocess": "İşlemde",
+    "canceled": "İptal Edildi",
+    "completed": "Tamamlandı"
+  },
+  
+  "profile": {
+    "in_process": "İşlemde",
+    "completed": "Tamamlandı",
+    "edit_profile": "Profili Düzenle",
+    "notifications": "Bildirimler",
+    "security": "Güvenlik",
+    "language_region": "Dil ve Bölge",
+    "go_premium": "Premium'a Geç",
+    "help_center": "Yardım Merkezi",
+    "sign_out": "Çıkış Yap"
+  },
+  
+  "common": {
+    "focus": "Odaklan",
+    "settings": "Ayarlar"
+  },
+  
+  "task": {
+    "featured_task": "Öne Çıkan Görev",
+    "priority": "Öncelik"
+  },
+  
+  "tabs": {
+    "home": "Ana Sayfa",
+    "tasks": "Görevler",
+    "profile": "Profil"
+  },
+  
+  "task_list": {
+    "title": "Görevler",
+    "uncategorized": "Kategorisiz",
+    "no_tasks": "Görev bulunamadı",
+    "archive": "Arşivle",
+    "delete": "Sil"
+  }
 }

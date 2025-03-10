@@ -1,0 +1,58 @@
+{
+  "greeting": "Hallo, {{name}}!",
+  "welcome": "Willkommen, {{name}}!",
+  "items": "Sie haben {{count}} Element",
+  "items_plural": "Sie haben {{count}} Elemente",
+  "change_language": "Sprache ändern",
+  
+  "home": {
+    "subtitle": "Lassen Sie uns herausfinden, was als Nächstes zu tun ist",
+    "status_overview": "Statusübersicht",
+    "upcoming": "Bevorstehend",
+    "empty_tasks": "Keine bevorstehenden Aufgaben. Fügen Sie eine hinzu!",
+    "tasks": "Aufgaben"
+  },
+  
+  "status": {
+    "ongoing": "Laufend",
+    "inprocess": "In Bearbeitung",
+    "canceled": "Abgebrochen",
+    "completed": "Abgeschlossen"
+  },
+  
+  "profile": {
+    "in_process": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "edit_profile": "Profil bearbeiten",
+    "notifications": "Benachrichtigungen",
+    "security": "Sicherheit",
+    "language_region": "Sprache & Region",
+    "go_premium": "Premium werden",
+    "help_center": "Hilfezentrum",
+    "sign_out": "Abmelden"
+  },
+  
+  "common": {
+    "focus": "Fokus",
+    "settings": "Einstellungen"
+  },
+  
+  "task": {
+    "featured_task": "Ausgewählte Aufgabe",
+    "priority": "Priorität"
+  },
+  
+  "tabs": {
+    "home": "Startseite",
+    "tasks": "Aufgaben",
+    "profile": "Profil"
+  },
+  
+  "task_list": {
+    "title": "Aufgaben",
+    "uncategorized": "Unkategorisiert",
+    "no_tasks": "Keine Aufgaben gefunden",
+    "archive": "Archivieren",
+    "delete": "Löschen"
+  }
+} 

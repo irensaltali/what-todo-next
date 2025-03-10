@@ -269,8 +269,8 @@ export default function HomeScreen() {
           />
         </View>
         <View style={styles.statusTextContainer}>
-          <Text style={styles.statusTitle}>{status.charAt(0).toUpperCase() + status.slice(1)}</Text>
-          <Text style={styles.statusLabel}>{count} Tasks</Text>
+          <Text style={styles.statusTitle}>{t(`status.${status}`)}</Text>
+          <Text style={styles.statusLabel}>{count} {t('home.tasks')}</Text>
         </View>
       </View>
     </View>
@@ -284,7 +284,7 @@ export default function HomeScreen() {
       <View style={styles.taskInfo}>
         <Text style={styles.taskTitle}>{task.title}</Text>
         <Text style={styles.taskType}>{task.type}</Text>
-        <Text style={styles.taskCount}>{task.task_count} Tasks</Text>
+        <Text style={styles.taskCount}>{task.task_count} {t('home.tasks')}</Text>
       </View>
     </Pressable>
   );
@@ -303,7 +303,7 @@ export default function HomeScreen() {
             </Pressable>
             <View>
               <Text style={styles.greeting}>{t('greeting', { name: profile.name || 'User' })} 👋</Text>
-              <Text style={styles.subtitle}>Let's find What To Do Next</Text>
+              <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
             </View>
           </View>
         </View>
@@ -322,7 +322,7 @@ export default function HomeScreen() {
           style={styles.sectionTitleContainer}
           onPress={toggleStatusSection}
         >
-          <Text style={styles.sectionTitle}>Status Overview</Text>
+          <Text style={styles.sectionTitle}>{t('home.status_overview')}</Text>
 
           <View style={styles.headerRightContainer}>
             <Animated.View style={[styles.statusSummary, statusSummaryStyle]}>
@@ -374,12 +374,12 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.tasksSection}>
-          <Text style={styles.sectionTitle}>Upcoming</Text>
+          <Text style={styles.sectionTitle}>{t('home.upcoming')}</Text>
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} />
           ))}
           {tasks.length === 0 && (
-            <Text style={styles.emptyStateText}>No upcoming tasks. Add one!</Text>
+            <Text style={styles.emptyStateText}>{t('home.empty_tasks')}</Text>
           )}
         </View>
       </Animated.ScrollView>

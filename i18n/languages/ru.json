@@ -1,0 +1,58 @@
+{
+  "greeting": "Привет, {{name}}!",
+  "welcome": "Добро пожаловать, {{name}}!",
+  "items": "У вас {{count}} элемент",
+  "items_plural": "У вас {{count}} элементов",
+  "change_language": "Изменить язык",
+  
+  "home": {
+    "subtitle": "Давайте найдем, что делать дальше",
+    "status_overview": "Обзор статуса",
+    "upcoming": "Предстоящие",
+    "empty_tasks": "Нет предстоящих задач. Добавьте одну!",
+    "tasks": "Задачи"
+  },
+  
+  "status": {
+    "ongoing": "В процессе",
+    "inprocess": "В обработке",
+    "canceled": "Отменено",
+    "completed": "Завершено"
+  },
+  
+  "profile": {
+    "in_process": "В обработке",
+    "completed": "Завершено",
+    "edit_profile": "Редактировать профиль",
+    "notifications": "Уведомления",
+    "security": "Безопасность",
+    "language_region": "Язык и регион",
+    "go_premium": "Перейти на Premium",
+    "help_center": "Центр поддержки",
+    "sign_out": "Выйти"
+  },
+  
+  "common": {
+    "focus": "Фокус",
+    "settings": "Настройки"
+  },
+  
+  "task": {
+    "featured_task": "Рекомендуемая задача",
+    "priority": "Приоритет"
+  },
+  
+  "tabs": {
+    "home": "Главная",
+    "tasks": "Задачи",
+    "profile": "Профиль"
+  },
+  
+  "task_list": {
+    "title": "Задачи",
+    "uncategorized": "Без категории",
+    "no_tasks": "Задачи не найдены",
+    "archive": "Архивировать",
+    "delete": "Удалить"
+  }
+} 

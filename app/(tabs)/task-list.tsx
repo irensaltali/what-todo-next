@@ -17,13 +17,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Task } from '@/lib/store/models/task';
 import { useTaskEntry } from '@/contexts/TaskEntryContext';
+import { useTranslation } from 'react-i18next';
 
 // Group tasks by list
-const groupTasksByList = (tasks: Task[]) => {
+const groupTasksByList = (tasks: Task[], t: Function) => {
   const grouped: Record<string, Task[]> = {};
   
   tasks.forEach(task => {
-    const listName = task.list || 'Uncategorized';
+    const listName = task.list || t('task_list.uncategorized');
     if (!grouped[listName]) {
       grouped[listName] = [];
     }
@@ -41,6 +42,7 @@ export default function TasksScreen() {
   const [page, setPage] = useState(0);
   const [hasMoreData, setHasMoreData] = useState(true);
   const { isTaskEntryVisible, showTaskEntry, hideTaskEntry } = useTaskEntry();
+  const { t } = useTranslation();
   const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
@@ -176,14 +178,14 @@ export default function TasksScreen() {
             onPress={() => archiveTask(task.id)}
           >
             <Ionicons name="archive-outline" size={20} color="#fff" />
-            <Text style={styles.actionText}>Archive</Text>
+            <Text style={styles.actionText}>{t('task_list.archive')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton]}
             onPress={() => deleteTask(task.id)}
           >
             <Ionicons name="trash-outline" size={20} color="#fff" />
-            <Text style={styles.actionText}>Delete</Text>
+            <Text style={styles.actionText}>{t('task_list.delete')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -240,7 +242,7 @@ export default function TasksScreen() {
   );
 
   const renderTaskList = () => {
-    const groupedTasks = groupTasksByList(tasks);
+    const groupedTasks = groupTasksByList(tasks, t);
     const sections = Object.entries(groupedTasks);
 
     return (
@@ -278,7 +280,7 @@ export default function TasksScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Tasks</Text>
+        <Text style={styles.title}>{t('task_list.title')}</Text>
         <Pressable style={styles.refreshButton} onPress={handleRefresh}>
           <Ionicons name="refresh" size={24} color="#1C1C1E" />
         </Pressable>
@@ -293,7 +295,7 @@ export default function TasksScreen() {
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="list" size={48} color="#8E8E93" />
-          <Text style={styles.emptyStateText}>No tasks found</Text>
+          <Text style={styles.emptyStateText}>{t('task_list.no_tasks')}</Text>
         </View>
       )}
       

@@ -1,0 +1,58 @@
+{
+  "greeting": "你好，{{name}}！",
+  "welcome": "欢迎，{{name}}！",
+  "items": "你有 {{count}} 个项目",
+  "items_plural": "你有 {{count}} 个项目",
+  "change_language": "更改语言",
+  
+  "home": {
+    "subtitle": "让我们找出接下来要做什么",
+    "status_overview": "状态概览",
+    "upcoming": "即将到来",
+    "empty_tasks": "没有即将到来的任务。添加一个！",
+    "tasks": "任务"
+  },
+  
+  "status": {
+    "ongoing": "进行中",
+    "inprocess": "处理中",
+    "canceled": "已取消",
+    "completed": "已完成"
+  },
+  
+  "profile": {
+    "in_process": "处理中",
+    "completed": "已完成",
+    "edit_profile": "编辑资料",
+    "notifications": "通知",
+    "security": "安全",
+    "language_region": "语言和地区",
+    "go_premium": "升级至高级版",
+    "help_center": "帮助中心",
+    "sign_out": "退出登录"
+  },
+  
+  "common": {
+    "focus": "专注",
+    "settings": "设置"
+  },
+  
+  "task": {
+    "featured_task": "精选任务",
+    "priority": "优先级"
+  },
+  
+  "tabs": {
+    "home": "首页",
+    "tasks": "任务",
+    "profile": "个人资料"
+  },
+  
+  "task_list": {
+    "title": "任务",
+    "uncategorized": "未分类",
+    "no_tasks": "未找到任务",
+    "archive": "归档",
+    "delete": "删除"
+  }
+} 

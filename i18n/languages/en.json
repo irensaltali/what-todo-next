@@ -3,5 +3,56 @@
   "welcome": "Welcome, {{name}}!",
   "items": "You have {{count}} item",
   "items_plural": "You have {{count}} items",
-  "change_language": "Change Language"
+  "change_language": "Change Language",
+  
+  "home": {
+    "subtitle": "Let's find What To Do Next",
+    "status_overview": "Status Overview",
+    "upcoming": "Upcoming",
+    "empty_tasks": "No upcoming tasks. Add one!",
+    "tasks": "Tasks"
+  },
+  
+  "status": {
+    "ongoing": "Ongoing",
+    "inprocess": "In Process",
+    "canceled": "Canceled",
+    "completed": "Completed"
+  },
+  
+  "profile": {
+    "in_process": "In Process",
+    "completed": "Completed",
+    "edit_profile": "Edit Profile",
+    "notifications": "Notifications",
+    "security": "Security",
+    "language_region": "Language & Region",
+    "go_premium": "Go Premium",
+    "help_center": "Help Center",
+    "sign_out": "Sign Out"
+  },
+  
+  "common": {
+    "focus": "Focus",
+    "settings": "Settings"
+  },
+  
+  "task": {
+    "featured_task": "Featured Task",
+    "priority": "Priority"
+  },
+  
+  "tabs": {
+    "home": "Home",
+    "tasks": "Tasks",
+    "profile": "Profile"
+  },
+  
+  "task_list": {
+    "title": "Tasks",
+    "uncategorized": "Uncategorized",
+    "no_tasks": "No tasks found",
+    "archive": "Archive",
+    "delete": "Delete"
+  }
 }

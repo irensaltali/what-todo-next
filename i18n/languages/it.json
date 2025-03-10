@@ -1,0 +1,58 @@
+{
+  "greeting": "Ciao, {{name}}!",
+  "welcome": "Benvenuto, {{name}}!",
+  "items": "Hai {{count}} elemento",
+  "items_plural": "Hai {{count}} elementi",
+  "change_language": "Cambia lingua",
+  
+  "home": {
+    "subtitle": "Scopriamo cosa fare dopo",
+    "status_overview": "Panoramica stato",
+    "upcoming": "In arrivo",
+    "empty_tasks": "Nessuna attività in arrivo. Aggiungine una!",
+    "tasks": "Attività"
+  },
+  
+  "status": {
+    "ongoing": "In corso",
+    "inprocess": "In elaborazione",
+    "canceled": "Annullato",
+    "completed": "Completato"
+  },
+  
+  "profile": {
+    "in_process": "In elaborazione",
+    "completed": "Completato",
+    "edit_profile": "Modifica profilo",
+    "notifications": "Notifiche",
+    "security": "Sicurezza",
+    "language_region": "Lingua e regione",
+    "go_premium": "Passa a Premium",
+    "help_center": "Centro assistenza",
+    "sign_out": "Esci"
+  },
+  
+  "common": {
+    "focus": "Focus",
+    "settings": "Impostazioni"
+  },
+  
+  "task": {
+    "featured_task": "Attività in evidenza",
+    "priority": "Priorità"
+  },
+  
+  "tabs": {
+    "home": "Home",
+    "tasks": "Attività",
+    "profile": "Profilo"
+  },
+  
+  "task_list": {
+    "title": "Attività",
+    "uncategorized": "Non categorizzato",
+    "no_tasks": "Nessuna attività trovata",
+    "archive": "Archivia",
+    "delete": "Elimina"
+  }
+} 

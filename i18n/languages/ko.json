@@ -1,0 +1,58 @@
+{
+  "greeting": "안녕하세요, {{name}}님!",
+  "welcome": "환영합니다, {{name}}님!",
+  "items": "{{count}}개의 항목이 있습니다",
+  "items_plural": "{{count}}개의 항목이 있습니다",
+  "change_language": "언어 변경",
+  
+  "home": {
+    "subtitle": "다음에 할 일을 찾아봅시다",
+    "status_overview": "상태 개요",
+    "upcoming": "예정된 작업",
+    "empty_tasks": "예정된 작업이 없습니다. 추가해 보세요!",
+    "tasks": "작업"
+  },
+  
+  "status": {
+    "ongoing": "진행 중",
+    "inprocess": "처리 중",
+    "canceled": "취소됨",
+    "completed": "완료됨"
+  },
+  
+  "profile": {
+    "in_process": "처리 중",
+    "completed": "완료됨",
+    "edit_profile": "프로필 편집",
+    "notifications": "알림",
+    "security": "보안",
+    "language_region": "언어 및 지역",
+    "go_premium": "프리미엄으로 전환",
+    "help_center": "도움말 센터",
+    "sign_out": "로그아웃"
+  },
+  
+  "common": {
+    "focus": "집중",
+    "settings": "설정"
+  },
+  
+  "task": {
+    "featured_task": "주요 작업",
+    "priority": "우선순위"
+  },
+  
+  "tabs": {
+    "home": "홈",
+    "tasks": "작업",
+    "profile": "프로필"
+  },
+  
+  "task_list": {
+    "title": "작업",
+    "uncategorized": "분류되지 않음",
+    "no_tasks": "작업을 찾을 수 없습니다",
+    "archive": "보관",
+    "delete": "삭제"
+  }
+} 

@@ -1,0 +1,58 @@
+{
+  "greeting": "こんにちは、{{name}}さん！",
+  "welcome": "ようこそ、{{name}}さん！",
+  "items": "{{count}}個のアイテムがあります",
+  "items_plural": "{{count}}個のアイテムがあります",
+  "change_language": "言語を変更",
+  
+  "home": {
+    "subtitle": "次に何をするか見つけましょう",
+    "status_overview": "ステータス概要",
+    "upcoming": "今後の予定",
+    "empty_tasks": "今後のタスクはありません。新しく追加しましょう！",
+    "tasks": "タスク"
+  },
+  
+  "status": {
+    "ongoing": "進行中",
+    "inprocess": "処理中",
+    "canceled": "キャンセル済",
+    "completed": "完了"
+  },
+  
+  "profile": {
+    "in_process": "処理中",
+    "completed": "完了",
+    "edit_profile": "プロフィール編集",
+    "notifications": "通知",
+    "security": "セキュリティ",
+    "language_region": "言語と地域",
+    "go_premium": "プレミアムに移行",
+    "help_center": "ヘルプセンター",
+    "sign_out": "サインアウト"
+  },
+  
+  "common": {
+    "focus": "フォーカス",
+    "settings": "設定"
+  },
+  
+  "task": {
+    "featured_task": "注目タスク",
+    "priority": "優先度"
+  },
+  
+  "tabs": {
+    "home": "ホーム",
+    "tasks": "タスク",
+    "profile": "プロフィール"
+  },
+  
+  "task_list": {
+    "title": "タスク",
+    "uncategorized": "未分類",
+    "no_tasks": "タスクが見つかりません",
+    "archive": "アーカイブ",
+    "delete": "削除"
+  }
+} 
