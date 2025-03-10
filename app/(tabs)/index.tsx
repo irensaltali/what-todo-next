@@ -15,12 +15,11 @@ import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
   withTiming,
-  withSpring,
   runOnJS,
-  withDecay
 } from 'react-native-reanimated';
 import { supabase } from '@/lib/supabase';
 import FeaturedTaskCard from '@/components/FeaturedTaskCard';
+import useProfileStore from '@/store/profileStore';
 
 // Get screen dimensions
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -74,12 +73,6 @@ interface Task {
   status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
 }
 
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_url: string | null;
-}
-
 const STATUS_COLORS = {
   ongoing: '#5593F1',
   inprocess: '#FFC247',
@@ -108,10 +101,24 @@ const featuredTaskData = {
   deadline: new Date(2024, 4, 30), // May 30, 2024
 };
 
+// Create a mapping of monster images for dynamic loading
+const monsterImages: Record<number, any> = {
+  1: require('@/assets/images/monsters/monster_1.png'),
+  2: require('@/assets/images/monsters/monster_2.png'),
+  3: require('@/assets/images/monsters/monster_3.png'),
+  4: require('@/assets/images/monsters/monster_4.png'),
+  5: require('@/assets/images/monsters/monster_5.png'),
+  6: require('@/assets/images/monsters/monster_6.png'),
+  7: require('@/assets/images/monsters/monster_7.png'),
+  8: require('@/assets/images/monsters/monster_8.png'),
+  9: require('@/assets/images/monsters/monster_9.png'),
+  10: require('@/assets/images/monsters/monster_10.png'),
+};
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, loading: profileLoading, error: profileError, loadProfile, getDefaultAvatar } = useProfileStore();
   const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
   const scrollY = useSharedValue(0);
   const lastScrollY = useSharedValue(0);
@@ -121,44 +128,23 @@ export default function HomeScreen() {
   const summaryOpacity = useSharedValue(0);
 
   useEffect(() => {
-    fetchProfile();
+    initializeProfile();
     fetchTasks();
   }, []);
 
-  const fetchProfile = async () => {
+  const initializeProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        if (error.message.includes('found no rows')) {
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert([
-              {
-                id: user.id,
-                name: user.email?.split('@')[0] || 'User',
-                avatar_url: null,
-              },
-            ])
-            .select()
-            .single();
-
-          if (!insertError && newProfile) {
-            setProfile(newProfile);
-          }
+      // Check if we already have a profile in the store
+      if (!profile.id) {
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Load profile from Supabase using the store's loadProfile function
+          await loadProfile(user.id);
         }
-      } else {
-        setProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error initializing profile:', error);
     }
   };
 
@@ -308,12 +294,12 @@ export default function HomeScreen() {
           <View style={styles.headerLeft}>
             <Pressable onPress={handleProfilePress}>
               <Image
-                source={{ uri: profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' }}
+                source={profile.avatar_url ? { uri: profile.avatar_url } : monsterImages[getDefaultAvatar()]}
                 style={styles.avatar}
               />
             </Pressable>
             <View>
-              <Text style={styles.greeting}>Hi, {profile?.name || 'User'} 👋</Text>
+              <Text style={styles.greeting}>Hi, {profile.name || 'User'} 👋</Text>
               <Text style={styles.subtitle}>Let's find What To Do Next</Text>
             </View>
           </View>

@@ -14,22 +14,31 @@ import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { getAvatarUrl } from '@/lib/avatarUrl';
 import { format } from 'date-fns';
-import { StatusBar } from '@/components/StatusBar';
-
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_url: string | null;
-}
+import useProfileStore from '@/store/profileStore';
+import { Profile } from '@/store/models/profile';
 
 interface TaskCounts {
   inProcess: number;
   completed: number;
 }
 
+// Create a mapping of monster images for dynamic loading
+const monsterImages: Record<number, any> = {
+  1: require('@/assets/images/monsters/monster_1.png'),
+  2: require('@/assets/images/monsters/monster_2.png'),
+  3: require('@/assets/images/monsters/monster_3.png'),
+  4: require('@/assets/images/monsters/monster_4.png'),
+  5: require('@/assets/images/monsters/monster_5.png'),
+  6: require('@/assets/images/monsters/monster_6.png'),
+  7: require('@/assets/images/monsters/monster_7.png'),
+  8: require('@/assets/images/monsters/monster_8.png'),
+  9: require('@/assets/images/monsters/monster_9.png'),
+  10: require('@/assets/images/monsters/monster_10.png'),
+};
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, loading: profileLoading, error: profileError, loadProfile, getDefaultAvatar } = useProfileStore();
   const [taskCounts, setTaskCounts] = useState<TaskCounts>({
     inProcess: 0,
     completed: 0,
@@ -37,7 +46,7 @@ export default function ProfileScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    fetchProfile();
+    initializeProfile();
     fetchTaskCounts();
 
     // Update time every minute
@@ -48,25 +57,26 @@ export default function ProfileScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const fetchProfile = async () => {
+  const initializeProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
+      // Check if we already have a profile in the store
+      if (!profile.id) {
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Load profile from Supabase using the store's loadProfile function
+          await loadProfile(user.id);
+        }
+      }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error initializing profile:', error);
     }
   };
 
   const fetchTaskCounts = async () => {
+    // If task counts are already populated (not both zero), don't fetch again
+    if (taskCounts.inProcess > 0 || taskCounts.completed > 0) return;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -97,6 +107,8 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    // Clear the profile from the store
+    useProfileStore.getState().clearProfile();
     router.replace('/sign-in');
   };
 
@@ -134,7 +146,7 @@ export default function ProfileScreen() {
           </View>
           
           <Image
-            source={{ uri: getAvatarUrl(profile?.avatar_url) }}
+            source={profile.avatar_url ? { uri: profile.avatar_url } : monsterImages[getDefaultAvatar()]}
             style={styles.profileImage}
           />
           
@@ -143,7 +155,7 @@ export default function ProfileScreen() {
             <Text style={styles.metricLabel}>Completed</Text>
           </View>
         </View>
-        <Text style={styles.userName}>{profile?.name || 'User'}</Text>
+        <Text style={styles.userName}>{profile.name || 'User'}</Text>
       </View>
 
       <Pressable 
