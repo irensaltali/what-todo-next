@@ -28,6 +28,7 @@ interface ProfileState {
     profile: Profile;
     loading: boolean;
     error: string | null;
+    cachedAvatarUrl: string | null; // Store locally cached avatar
     setProfile: (profile: Profile) => void;
     updateProfile: (data: Partial<Profile>) => void;
     clearProfile: () => void;
@@ -35,6 +36,7 @@ interface ProfileState {
     setLoading: (loading: boolean) => void;
     setError: (error: string | null) => void;
     getDefaultAvatar: () => number;
+    getAvatarUrl: () => string | null; // New method to get avatar with caching
 }
 
 /**
@@ -54,18 +56,35 @@ const useProfileStore = create<ProfileState>()(
         // Loading state
         loading: false,
         error: null,
+        cachedAvatarUrl: null,
 
         // Actions
-        setProfile: (profile: Profile) => set({ profile }),
+        setProfile: (profile: Profile) => {
+            // When setting the profile, cache the avatar URL
+            set({ 
+                profile,
+                cachedAvatarUrl: profile.avatar_url 
+            });
+        },
 
-        updateProfile: (data: Partial<Profile>) =>
-            set((state: ProfileState) => ({
-                profile: {
-                    ...state.profile,
-                    ...data,
-                    updated_at: new Date().toISOString(),
-                }
-            })),
+        updateProfile: (data: Partial<Profile>) => {
+            const currentState = get();
+            const updatedProfile = {
+                ...currentState.profile,
+                ...data,
+                updated_at: new Date().toISOString(),
+            };
+            
+            // Update cached avatar only if it has changed
+            const newCachedAvatarUrl = data.avatar_url !== undefined 
+                ? data.avatar_url 
+                : currentState.cachedAvatarUrl;
+                
+            set({
+                profile: updatedProfile,
+                cachedAvatarUrl: newCachedAvatarUrl
+            });
+        },
 
         clearProfile: () =>
             set({
@@ -75,7 +94,8 @@ const useProfileStore = create<ProfileState>()(
                     avatar_url: null,
                     created_at: null,
                     updated_at: null,
-                }
+                },
+                cachedAvatarUrl: null
             }),
 
         loadProfile: async (userId: string) => {
@@ -93,7 +113,16 @@ const useProfileStore = create<ProfileState>()(
                 }
                 
                 if (data) {
-                    set({ profile: data as Profile });
+                    const profileData = data as Profile;
+                    // Check if avatar has changed before updating cache
+                    const currentCachedAvatar = get().cachedAvatarUrl;
+                    const newAvatarUrl = profileData.avatar_url;
+                    
+                    set({ 
+                        profile: profileData,
+                        // Only update cached avatar if it's different
+                        cachedAvatarUrl: newAvatarUrl !== currentCachedAvatar ? newAvatarUrl : currentCachedAvatar
+                    });
                 }
             } catch (error) {
                 set({ error: error instanceof Error ? error.message : 'Failed to load profile' });
@@ -109,6 +138,25 @@ const useProfileStore = create<ProfileState>()(
         
         // Get a random monster image as default avatar
         getDefaultAvatar: () => getRandomMonsterImage(get().profile.id),
+        
+        // Get avatar with local caching
+        getAvatarUrl: () => {
+            const { profile, cachedAvatarUrl } = get();
+            
+            // Return cached avatar if available
+            if (cachedAvatarUrl) {
+                return cachedAvatarUrl;
+            }
+            
+            // If no cached avatar but profile has one, cache and return it
+            if (profile.avatar_url) {
+                set({ cachedAvatarUrl: profile.avatar_url });
+                return profile.avatar_url;
+            }
+            
+            // Default fallback - will generate a random monster
+            return null;
+        }
     }),
         {
             name: 'profile-storage', // unique name for the storage
