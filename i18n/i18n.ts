@@ -1,0 +1,48 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import en from './languages/en.json';
+import tr from './languages/tr.json';
+
+// Simple language detector without RNLocalize
+const languageDetector = {
+  type: 'languageDetector',
+  async: true,
+  detect: async (callback: (lng: string) => void) => {
+    try {
+      // Check AsyncStorage first
+      const storedLanguage = await AsyncStorage.getItem('language');
+      if (storedLanguage) {
+        callback(storedLanguage);
+        return;
+      }
+
+      // Default to English if no stored language
+      const defaultLang = 'en';
+      await AsyncStorage.setItem('language', defaultLang);
+      callback(defaultLang);
+    } catch (error) {
+      console.error('Language detection error:', error);
+      callback('en'); // Fallback to English on error
+    }
+  },
+  init: () => {},
+  cacheUserLanguage: () => {},
+};
+
+i18n
+  .use(languageDetector as any)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: en },
+      tr: { translation: tr },
+    },
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false, // React Native handles escaping
+    },
+    compatibilityJSON: 'v4', // For RN compatibility
+  });
+
+export default i18n;

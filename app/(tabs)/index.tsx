@@ -20,6 +20,8 @@ import Animated, {
 import { supabase } from '@/lib/supabase';
 import FeaturedTaskCard from '@/components/FeaturedTaskCard';
 import useProfileStore from '@/store/profileStore';
+import { Profile } from '@/store/models/profile';
+import { useTranslation } from 'react-i18next';
 
 // Get screen dimensions
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -120,6 +122,7 @@ export default function HomeScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { profile, loading: profileLoading, error: profileError, loadProfile, getDefaultAvatar } = useProfileStore();
   const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
+  const { t } = useTranslation();
   const scrollY = useSharedValue(0);
   const lastScrollY = useSharedValue(0);
   const scrollVelocity = useSharedValue(0);
@@ -299,7 +302,7 @@ export default function HomeScreen() {
               />
             </Pressable>
             <View>
-              <Text style={styles.greeting}>Hi, {profile.name || 'User'} 👋</Text>
+              <Text style={styles.greeting}>{t('greeting', { name: profile.name || 'User' })} 👋</Text>
               <Text style={styles.subtitle}>Let's find What To Do Next</Text>
             </View>
           </View>

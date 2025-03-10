@@ -1,0 +1,7 @@
+{
+  "greeting": "Merhaba, {{name}}!",
+  "welcome": "Hoş geldiniz, {{name}}!",
+  "items": "Sepetinizde {{count}} ürün var",
+  "items_plural": "Sepetinizde {{count}} ürün var",
+  "change_language": "Dili Değiştir"
+}

@@ -1,0 +1,7 @@
+{
+  "greeting": "Hi, {{name}}!",
+  "welcome": "Welcome, {{name}}!",
+  "items": "You have {{count}} item",
+  "items_plural": "You have {{count}} items",
+  "change_language": "Change Language"
+}
