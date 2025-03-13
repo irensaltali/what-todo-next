@@ -5,6 +5,13 @@
   "private": true,
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
+    "dev:clear": "EXPO_NO_TELEMETRY=1 expo start --clear",
+    "start:dev": "EXPO_PUBLIC_ENV=development expo start",
+    "start:staging": "EXPO_PUBLIC_ENV=staging expo start",
+    "start:prod": "EXPO_PUBLIC_ENV=production expo start",
+    "build:dev": "eas build --profile development --platform ios",
+    "build:staging": "eas build --profile staging --platform ios",
+    "build:prod": "eas build --profile production --platform ios",
     "build:web": "expo export --platform web",
     "lint": "expo lint"
   },

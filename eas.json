@@ -6,13 +6,46 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://b4a6294d842d66867b4c6eb418d89117@o4508969351184384.ingest.us.sentry.io/4508969352232960",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_qOmBdQD8cJUOaKCVEC4XrCU8zxYgYYkUGwkWZXybW1W",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://b4a6294d842d66867b4c6eb418d89117@o4508969351184384.ingest.us.sentry.io/4508969352232960",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_qOmBdQD8cJUOaKCVEC4XrCU8zxYgYYkUGwkWZXybW1W",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ENV": "staging",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://b4a6294d842d66867b4c6eb418d89117@o4508969351184384.ingest.us.sentry.io/4508969352232960",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_qOmBdQD8cJUOaKCVEC4XrCU8zxYgYYkUGwkWZXybW1W",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
+      },
+      "ios": {
+        "resourceClass": "m1-medium"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://b4a6294d842d66867b4c6eb418d89117@o4508969351184384.ingest.us.sentry.io/4508969352232960",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_qOmBdQD8cJUOaKCVEC4XrCU8zxYgYYkUGwkWZXybW1W",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
+      },
+      "ios": {
+        "resourceClass": "m1-medium"
+      }
     }
   },
   "submit": {
