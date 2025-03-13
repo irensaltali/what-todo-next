@@ -1,5 +1,5 @@
 {
-  "name": "what-to-do-next",
+  "name": "todo-next",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
