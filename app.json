@@ -22,7 +22,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "4ai"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

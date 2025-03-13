@@ -19,6 +19,7 @@ import Animated, {
   useSharedValue,
   withTiming,
   interpolate,
+  useDerivedValue
 } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { useTheme } from '../contexts/ThemeContext';
@@ -114,6 +115,42 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const strokeWidth = 3;
   const radius = (circleSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+
+  // State variables derived from progress for rendering
+  const [progressStrokeDashoffset, setProgressStrokeDashoffset] = useState(circumference);
+  const [progressStrokeWidth, setProgressStrokeWidth] = useState(strokeWidth);
+  const [progressStrokeColor, setProgressStrokeColor] = useState('#7EB6FF');
+  
+  // Update derived state when progress changes
+  useEffect(() => {
+    const updateProgressValues = () => {
+      const progressValue = progress.value;
+      setProgressStrokeDashoffset(circumference * (1 - progressValue));
+      
+      if (mode === 'pomo') {
+        setProgressStrokeWidth(
+          interpolate(progressValue, [0, 1], [strokeWidth, strokeWidth * 3])
+        );
+        
+        if (progressValue > 0.75) setProgressStrokeColor('#FF8C42');
+        else if (progressValue > 0.5) setProgressStrokeColor('#FFA66D');
+        else if (progressValue > 0.25) setProgressStrokeColor('#FFC39E');
+        else setProgressStrokeColor('#7EB6FF');
+      } else {
+        setProgressStrokeWidth(strokeWidth);
+        setProgressStrokeColor('#7EB6FF');
+      }
+    };
+    
+    // Initial update
+    updateProgressValues();
+    
+    // Set up an interval to update values periodically
+    // This avoids having progress.value in the dependency array
+    const intervalId = setInterval(updateProgressValues, 16); // ~60fps
+    
+    return () => clearInterval(intervalId);
+  }, [mode, circumference, strokeWidth]);
 
   // Initialize audio session
   useEffect(() => {
@@ -463,40 +500,6 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
     }
   };
 
-  // Circle progress animation
-  const animatedCircleProps = useAnimatedStyle(() => {
-    const strokeDashoffset = circumference * (1 - progress.value);
-    
-    return {
-      strokeDashoffset,
-      strokeWidth: mode === 'pomo' ? 
-        interpolate(
-          progress.value, 
-          [0, 1], 
-          [strokeWidth, strokeWidth * 3]
-        ) : strokeWidth,
-      stroke: mode === 'pomo' ? 
-        progress.value > 0.75 ? '#FF8C42' : 
-        progress.value > 0.5 ? '#FFA66D' : 
-        progress.value > 0.25 ? '#FFC39E' : 
-        '#7EB6FF' : '#7EB6FF',
-    } as any;
-  });
-
-  // Extract values for the AnimatedCircle
-  const strokeDashoffset = circumference * (1 - progress.value);
-  const currentStrokeWidth = mode === 'pomo' ? 
-    interpolate(
-      progress.value, 
-      [0, 1], 
-      [strokeWidth, strokeWidth * 3]
-    ) : strokeWidth;
-  const currentStroke = mode === 'pomo' ? 
-    progress.value > 0.75 ? '#FF8C42' : 
-    progress.value > 0.5 ? '#FFA66D' : 
-    progress.value > 0.25 ? '#FFC39E' : 
-    '#7EB6FF' : '#7EB6FF';
-
   return (
     <Modal
       visible={visible}
@@ -579,11 +582,11 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
                 cx={circleSize / 2}
                 cy={circleSize / 2}
                 r={radius}
-                stroke={currentStroke}
-                strokeWidth={currentStrokeWidth}
+                stroke={progressStrokeColor}
+                strokeWidth={progressStrokeWidth}
                 fill="transparent"
                 strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
+                strokeDashoffset={progressStrokeDashoffset}
                 strokeLinecap="round"
               />
               

@@ -9,12 +9,20 @@ import useLanguageStore from '@/store/languageStore';
 import i18n from '@/i18n/i18n';
 import { I18nManager } from 'react-native';
 import { PostHogProvider } from 'posthog-react-native'
+import * as Sentry from '@sentry/react-native';
 
 declare global {
   interface Window {
     frameworkReady?: () => void;
   }
 }
+
+Sentry.init({
+  dsn: 'https://b4a6294d842d66867b4c6eb418d89117@o4508969351184384.ingest.us.sentry.io/4508969352232960',
+  sendDefaultPii: true,
+  tracesSampleRate: 1.0,
+  profilesSampleRate: 1.0,
+});
 
 // Component to render the TaskEntryBottomSheet with context
 function AppWithTaskEntry() {
