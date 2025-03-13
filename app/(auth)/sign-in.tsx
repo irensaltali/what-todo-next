@@ -16,7 +16,7 @@ import Animated, {
   FadeInDown,
   FadeInUp,
 } from 'react-native-reanimated';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/data/supabase';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();

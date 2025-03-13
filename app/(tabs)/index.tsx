@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/data/supabase';
 import FeaturedTaskCard from '@/components/FeaturedTaskCard';
 import useProfileStore from '@/store/profileStore';
 import { Profile } from '@/store/models/profile';

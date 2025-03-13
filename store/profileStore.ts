@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Profile } from '../store/models/profile';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../data/supabase';
 
 /**
  * Generates a random monster image from the assets

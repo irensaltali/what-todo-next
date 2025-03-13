@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '../data/supabase';
 
 /**
  * Transforms a raw storage path or URL into a properly formatted public URL for avatar images

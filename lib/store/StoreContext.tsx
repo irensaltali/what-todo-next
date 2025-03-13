@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../supabase';
+import { supabase } from '../../data/supabase';
 import { StoreState, StoreAction, StoreContextType, CacheState } from './types';
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes

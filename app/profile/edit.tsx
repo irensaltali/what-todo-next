@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/data/supabase';
 import { getAvatarUrl } from '@/lib/avatarUrl';
 import { ImageEditor } from '@/components/ImageEditor';
 import { uploadAvatar } from '@/lib/avatar';

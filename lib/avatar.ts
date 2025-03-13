@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { supabase } from './supabase';
+import { supabase } from '../data/supabase';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];

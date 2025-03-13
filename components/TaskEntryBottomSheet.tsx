@@ -19,7 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../data/supabase';
 
 const { height, width } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
