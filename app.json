@@ -30,7 +30,8 @@
           "project": "react-native",
           "organization": "4ai"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
