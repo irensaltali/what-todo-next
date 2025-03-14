@@ -626,11 +626,12 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     <TextInput
                       ref={titleInputRef}
                       style={styles.titleInput}
-                      placeholder="Title"
+                      placeholder="Task title"
                       value={title}
                       onChangeText={handleTitleChange}
                       returnKeyType="next"
-                      placeholderTextColor="#8E8E93"
+                      placeholderTextColor="rgba(142, 142, 147, 0.6)"
+                      selectionColor="#FF9F1C"
                     />
                   </View>
                 </View>
@@ -655,7 +656,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   />
                   <RichEditor
                     ref={richEditorRef}
-                    placeholder="Add a description..."
+                    placeholder="Add notes or description..."
                     initialContentHTML={description}
                     onChange={(text) => {
                       setDescription(text);
@@ -663,7 +664,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     }}
                     editorStyle={{
                       backgroundColor: 'transparent',
-                      contentCSSText: 'font-size: 14px; padding: 12px; min-height: 110px; color: #2C2C2C;'
+                      contentCSSText: 'font-size: 14px; padding: 10px 12px; min-height: 110px; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, sans-serif;'
                     }}
                     containerStyle={styles.richEditorContent}
                   />
@@ -852,26 +853,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   combinedInputContainer: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#DDDDDD',
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
+    marginBottom: 8,
     overflow: 'hidden',
     flex: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 12,
   },
   titleInput: {
     flex: 1,
-    height: 40,
+    height: 35,
     fontSize: 16,
     fontWeight: '500',
     textAlign: 'left',
     paddingHorizontal: 0,
+    color: '#2C2C2C',
   },
   divider: {
     height: 1,
@@ -881,19 +888,24 @@ const styles = StyleSheet.create({
   richEditorContainer: {
     minHeight: 146,
     maxHeight: Math.min(250, height * 0.3),
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#DDDDDD',
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   richToolbar: {
     backgroundColor: '#F8F8F8',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-    height: 36,
-    paddingHorizontal: 8,
+    height: 32,
+    paddingHorizontal: 10,
   },
   richEditorContent: {
     flex: 1,
