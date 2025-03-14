@@ -53,6 +53,8 @@
     "uncategorized": "未分类",
     "no_tasks": "未找到任务",
     "archive": "归档",
-    "delete": "删除"
+    "delete": "删除",
+    "pull_to_refresh": "下拉刷新",
+    "refreshing": "刷新中..."
   }
 } 

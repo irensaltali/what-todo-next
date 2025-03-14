@@ -11,7 +11,6 @@ import {
   Dimensions,
   Platform,
   Alert,
-  LayoutAnimation,
   UIManager,
   StatusBar,
   SafeAreaView,
@@ -19,7 +18,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../data/supabase';
+import { createTask } from '../data/taskService'; // Update import to use the specific file
 
 const { height, width } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
@@ -57,11 +59,14 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptionsPosition, setAdvancedOptionsPosition] = useState({ x: 0, y: 0 });
+  const [submitting, setSubmitting] = useState(false);
   
   const translateY = useRef(new Animated.Value(height)).current;
   const titleInputRef = useRef<TextInput>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
+  const { t } = useTranslation();
+  const { top } = useSafeAreaInsets();
 
   useEffect(() => {
     if (isVisible) {
@@ -210,30 +215,36 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         return;
       }
 
-      // Prepare task data
+      // Prepare task data with all required fields
       const taskData = {
-        title: title.trim(),
-        description: description.trim(),
         user_id: user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        parent_task_id: null, // Required field, null for top-level tasks
         priority: priority,
-        status: 'ongoing',
-        start_time: date ? date.toISOString() : new Date().toISOString(),
-        reminder: isReminderEnabled,
+        is_recursive: false, // Required field
+        is_deleted: false, // Required field
+        status: 'ongoing' as 'ongoing', // Use the proper enum value
+        // Map the existing fields to the correct names
+        deadline: date ? date.toISOString() : null,
+        // Add any other required fields from the Task interface
       };
 
-      // Save to database
-      const { error } = await supabase.from('tasks').insert([taskData]);
+      // Save to database using our service instead of direct supabase call
+      const { error } = await createTask(taskData);
 
       if (error) {
         throw error;
       }
 
-      // Success handling
+      // Clear form and close sheet
+      resetForm();
+      handleClose();
+      
+      // Notify parent
       if (onTaskAdded) {
         onTaskAdded();
       }
-      
-      onClose();
     } catch (error) {
       console.error('Error creating task:', error);
       Alert.alert('Error', 'Failed to create task. Please try again.');

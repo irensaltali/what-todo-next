@@ -25,14 +25,14 @@ interface EditableFields {
 
 const STATUS_COLORS = {
   ongoing: '#007AFF',
-  inprocess: '#FF9F1C',
+  inprogress: '#FF9F1C',
   canceled: '#FF3B30',
   completed: '#34C759',
 };
 
 const STATUS_LABELS = {
   ongoing: 'Ongoing',
-  inprocess: 'In Process',
+  inprogress: 'In Process',
   canceled: 'Canceled',
   completed: 'Completed',
 };

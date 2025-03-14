@@ -53,6 +53,8 @@
     "uncategorized": "Unkategorisiert",
     "no_tasks": "Keine Aufgaben gefunden",
     "archive": "Archivieren",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "pull_to_refresh": "Nach unten ziehen zum Aktualisieren",
+    "refreshing": "Aktualisiere..."
   }
 } 

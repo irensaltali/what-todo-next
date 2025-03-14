@@ -53,6 +53,8 @@
     "uncategorized": "Kategorisiz",
     "no_tasks": "Görev bulunamadı",
     "archive": "Arşivle",
-    "delete": "Sil"
+    "delete": "Sil",
+    "pull_to_refresh": "Yenilemek için aşağı çekin",
+    "refreshing": "Yenileniyor..."
   }
 }

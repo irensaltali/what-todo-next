@@ -1,8 +1,8 @@
 import { supabase } from './supabase';
 import { UUID, CrudResponse, handleSupabaseError, formatResponse } from './utils';
 
-// Define the Task interface here since we can't import it directly
-interface Task {
+// Define the Task interface and export it
+export interface Task {
   id: UUID;
   user_id: UUID;
   parent_task_id: UUID | null;
@@ -16,6 +16,7 @@ interface Task {
   recursion_count?: number | null;
   recursion_end?: string | null;
   is_deleted: boolean;
+  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
   created_at: string;
   updated_at: string;
 }
@@ -32,9 +33,15 @@ const TABLE_NAME = 'tasks';
  */
 export const createTask = async (taskData: CreateTaskInput): Promise<CrudResponse<Task>> => {
   try {
+    // Set default status to 'ongoing' if not provided
+    const dataToInsert = {
+      ...taskData,
+      status: taskData.status || 'ongoing'
+    };
+
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .insert([taskData])
+      .insert([dataToInsert])
       .select('*')
       .single();
 

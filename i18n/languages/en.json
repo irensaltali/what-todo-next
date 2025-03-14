@@ -53,6 +53,8 @@
     "uncategorized": "Uncategorized",
     "no_tasks": "No tasks found",
     "archive": "Archive",
-    "delete": "Delete"
+    "delete": "Delete",
+    "pull_to_refresh": "Pull down to refresh",
+    "refreshing": "Refreshing..."
   }
 }

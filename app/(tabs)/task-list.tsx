@@ -8,6 +8,9 @@ import {
   ActivityIndicator,
   Animated,
   TouchableOpacity,
+  Alert,
+  RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,13 +18,15 @@ import { supabase } from '@/data/supabase';
 import { router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { Task } from '@/lib/store/models/task';
+import { Task as AppTask } from '@/lib/store/models/task';
 import { useTaskEntry } from '@/contexts/TaskEntryContext';
 import { useTranslation } from 'react-i18next';
+import { getUserTasks, updateTask, hardDeleteTask } from '../../data/taskService';
+import type { Task as ServiceTask } from '../../data/taskService';
 
 // Group tasks by list
-const groupTasksByList = (tasks: Task[], t: Function) => {
-  const grouped: Record<string, Task[]> = {};
+const groupTasksByList = (tasks: AppTask[], t: Function) => {
+  const grouped: Record<string, AppTask[]> = {};
   
   tasks.forEach(task => {
     const listName = task.list || t('task_list.uncategorized');
@@ -36,7 +41,7 @@ const groupTasksByList = (tasks: Task[], t: Function) => {
 
 export default function TasksScreen() {
   const insets = useSafeAreaInsets();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<AppTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
@@ -51,35 +56,64 @@ export default function TasksScreen() {
 
   const fetchTasks = async (pageToFetch = 0) => {
     try {
-      if (pageToFetch === 0) setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const start = pageToFetch * ITEMS_PER_PAGE;
+      // If it's the first page, we're either doing an initial load or a refresh
+      if (pageToFetch === 0) {
+        if (!tasks.length) {
+          // Only set loading to true for initial load when there are no tasks yet
+          setLoading(true);
+        } else {
+          // For refreshes on existing data, use the refreshing indicator
+          setRefreshing(true);
+        }
+      }
       
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        // Remove the filter for archived column since it doesn't exist
-        .order('start_time', { ascending: true })
-        .range(start, start + ITEMS_PER_PAGE - 1);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      const { data, error } = await getUserTasks(user.id);
 
       if (error) throw error;
       
+      const formattedTasks = data ? data.map((serviceTask: ServiceTask) => ({
+        id: serviceTask.id,
+        user_id: serviceTask.user_id,
+        title: serviceTask.title,
+        description: serviceTask.description || '',
+        type: 'task',
+        list: '',
+        task_count: 0,
+        progress: 0,
+        status: serviceTask.status,
+        priority: serviceTask.priority || 0,
+        start_time: serviceTask.deadline || new Date().toISOString(),
+        difficulty: serviceTask.difficulty || undefined,
+        tags: [],
+        alert_enabled: false,
+        created_at: serviceTask.created_at,
+        updated_at: serviceTask.updated_at
+      } as AppTask)) : [];
+      
       if (pageToFetch === 0) {
-        setTasks(data || []);
+        setTasks(formattedTasks);
       } else {
-        setTasks(prev => [...prev, ...(data || [])]);
+        setTasks(prev => [...prev, ...formattedTasks]);
       }
       
       setHasMoreData((data?.length || 0) === ITEMS_PER_PAGE);
       setPage(pageToFetch);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    } finally {
+      
+      // Set loading and refreshing to false after successful fetch
       setLoading(false);
       setRefreshing(false);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setLoading(false);
+      setRefreshing(false);
+      Alert.alert('Error', 'Failed to load tasks');
     }
   };
 
@@ -96,57 +130,58 @@ export default function TasksScreen() {
 
   const markTaskAsDone = async (taskId: string, isDone: boolean) => {
     try {
-      const status = isDone ? 'completed' : 'ongoing';
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status })
-        .eq('id', taskId);
-        
+      const newStatus = isDone ? 'completed' as const : 'ongoing' as const;
+      
+      const { error } = await updateTask(taskId, { 
+        status: newStatus
+      });
+      
       if (error) throw error;
       
       // Update local state
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, status } : task
-      ));
+      setTasks(prev => 
+        prev.map(task => 
+          task.id === taskId ? { ...task, status: newStatus } : task
+        )
+      );
     } catch (error) {
       console.error('Error updating task status:', error);
+      Alert.alert('Error', 'Failed to update task');
     }
   };
 
   const deleteTask = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId);
-        
+      const { error } = await hardDeleteTask(taskId);
+      
       if (error) throw error;
       
-      // Remove task from local state
+      // Update local state
       setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
+      Alert.alert('Error', 'Failed to delete task');
     }
   };
 
   const archiveTask = async (taskId: string) => {
     try {
-      // Instead of using an "archived" field, mark the task as "canceled"
-      const { error } = await supabase
-        .from('tasks')
-        .update({ status: 'canceled' })
-        .eq('id', taskId);
-        
+      const { error } = await updateTask(taskId, { 
+        status: 'canceled' as const,
+        is_deleted: true
+      });
+      
       if (error) throw error;
       
       // Update local state
       setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error archiving task:', error);
+      Alert.alert('Error', 'Failed to archive task');
     }
   };
 
-  const TaskItem = ({ task }: { task: Task }) => {
+  const TaskItem = ({ task }: { task: AppTask }) => {
     const isDone = task.status === 'completed';
     const opacity = useRef(new Animated.Value(isDone ? 0.5 : 1)).current;
     const strikeWidth = useRef(new Animated.Value(isDone ? 1 : 0)).current;
@@ -257,8 +292,16 @@ export default function TasksScreen() {
             ))}
           </View>
         )}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || loading}
+            onRefresh={handleRefresh}
+            colors={['#FF9F1C']}
+            tintColor="#FF9F1C"
+            title={t('task_list.refreshing')}
+            titleColor="#8E8E93"
+          />
+        }
         onEndReached={loadMoreTasks}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
@@ -281,25 +324,31 @@ export default function TasksScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('task_list.title')}</Text>
-        <Pressable style={styles.refreshButton} onPress={handleRefresh}>
-          <Ionicons name="refresh" size={24} color="#1C1C1E" />
-        </Pressable>
       </View>
 
-      {loading && tasks.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF9F1C" />
-        </View>
-      ) : tasks.length > 0 ? (
+      {tasks.length > 0 ? (
         renderTaskList()
       ) : (
-        <View style={styles.emptyState}>
-          <Ionicons name="list" size={48} color="#8E8E93" />
-          <Text style={styles.emptyStateText}>{t('task_list.no_tasks')}</Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.emptyListContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing || loading}
+              onRefresh={handleRefresh}
+              colors={['#FF9F1C']}
+              tintColor="#FF9F1C"
+              title={t('task_list.refreshing')}
+              titleColor="#8E8E93"
+            />
+          }
+        >
+          <View style={styles.emptyState}>
+            <Ionicons name="list" size={48} color="#8E8E93" />
+            <Text style={styles.emptyStateText}>{t('task_list.no_tasks')}</Text>
+            <Text style={styles.emptyStateHint}>{t('task_list.pull_to_refresh')}</Text>
+          </View>
+        </ScrollView>
       )}
-      
-      {/* Remove the FAB button since we're using the tab button */}
     </View>
   );
 }
@@ -311,33 +360,15 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 20,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#1C1C1E',
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   section: {
     marginBottom: 16,
@@ -416,7 +447,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
@@ -426,6 +456,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
     textAlign: 'center',
+  },
+  emptyStateHint: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+  emptyListContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100%', // Ensure it fills the whole screen
   },
   loader: {
     padding: 16,

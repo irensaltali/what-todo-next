@@ -7,7 +7,7 @@ export interface Task {
   list: string;
   task_count: number;
   progress: number;
-  status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
+  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
   start_time: string;
   deadlineHours?: number; // Optional, in hours (can be hours or days converted to hours)
   value_impact?: number; // Optional, 1-100

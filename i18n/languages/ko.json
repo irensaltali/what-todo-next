@@ -53,6 +53,8 @@
     "uncategorized": "분류되지 않음",
     "no_tasks": "작업을 찾을 수 없습니다",
     "archive": "보관",
-    "delete": "삭제"
+    "delete": "삭제",
+    "pull_to_refresh": "아래로 당겨 새로고침",
+    "refreshing": "새로고침 중..."
   }
 } 

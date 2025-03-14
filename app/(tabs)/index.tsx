@@ -72,26 +72,26 @@ interface Task {
   type: string;
   task_count: number;
   progress: number;
-  status: 'ongoing' | 'inprocess' | 'canceled' | 'completed';
+  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
 }
 
 const STATUS_COLORS = {
   ongoing: '#5593F1',
-  inprocess: '#FFC247',
+  inprogress: '#FFC247',
   canceled: '#F26E56',
   completed: '#52C1C4',
 };
 
 const STATUS_ICON_COLORS = {
   ongoing: '#4C85DB',
-  inprocess: '#E5B03F',
+  inprogress: '#E5B03F',
   canceled: '#DA624D',
   completed: '#4AAFB2',
 };
 
 const STATUS_COUNTS = {
   ongoing: 24,
-  inprocess: 12,
+  inprogress: 12,
   canceled: 8,
   completed: 42,
 };
@@ -258,7 +258,7 @@ export default function HomeScreen() {
             name={
               status === 'ongoing'
                 ? 'time-outline'
-                : status === 'inprocess'
+                : status === 'inprogress'
                   ? 'reload-outline'
                   : status === 'canceled'
                     ? 'close-outline'
