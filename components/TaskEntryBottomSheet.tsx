@@ -150,9 +150,11 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     }
     setPriority(0);
     setDate(null);
+    setTempDate(null);
     setIsReminderEnabled(false);
     setReminders([]);
     setShowReminderOptions(false);
+    setShowAdvancedOptions(false);
     setHasChanges(false);
   };
 
@@ -333,15 +335,6 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         throw error;
       }
 
-      // Clear form and close sheet
-      resetForm();
-      handleClose();
-      
-      // Notify parent
-      if (onTaskAdded) {
-        onTaskAdded();
-      }
-
       // Create reminders if enabled and we have a task ID and date
       if (reminders.length > 0 && date && data && data.id) {
         // Create multiple reminders
@@ -359,6 +352,20 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         
         // Process all reminder creation promises
         await Promise.all(reminderPromises.filter(p => p !== null));
+      }
+      
+      // Mark that changes have been saved - do this before resetting the form
+      setHasChanges(false);
+      
+      // Clear form 
+      resetForm();
+      
+      // Safely close without showing alert
+      safelyClose();
+      
+      // Notify parent
+      if (onTaskAdded) {
+        onTaskAdded();
       }
     } catch (error) {
       console.error('Error creating task:', error);
