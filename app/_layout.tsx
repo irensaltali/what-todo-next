@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useNavigationContainerRef } from 'expo-router';
 import { useAuth } from '../lib/useAuth';
 import { StoreProvider } from '../lib/store/StoreContext';
 import { TaskEntryProvider, useTaskEntry } from '../contexts/TaskEntryContext';
@@ -19,6 +19,12 @@ declare global {
   }
 }
 
+// Create a ref for the navigation container
+export const navigationRef = useNavigationContainerRef();
+
+// Create a custom routing instrumentation for Expo Router
+const routingInstrumentation = Sentry.reactNavigationIntegration();
+
 // Initialize Sentry with environment-specific configuration
 Sentry.init({
   dsn: config.sentry.dsn,
@@ -28,6 +34,10 @@ Sentry.init({
   profilesSampleRate: config.sentry.profilesSampleRate,
   // Add app release information
   release: `${Constants.expoConfig?.name}@${config.appVersion}`,
+  // Enable React Navigation instrumentation
+  integrations: [
+    routingInstrumentation,
+  ],
 });
 
 // Component to render the TaskEntryBottomSheet with context
@@ -53,7 +63,7 @@ function AppWithTaskEntry() {
   );
 }
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const { session, loading } = useAuth();
 
   useEffect(() => {
@@ -70,6 +80,14 @@ export default function RootLayout() {
     const isRTL = language === 'ar'; // Example for Arabic
     I18nManager.forceRTL(isRTL);
   }, [language]);
+
+  // Register the navigation container with Sentry
+  useEffect(() => {
+    if (navigationRef) {
+      // Register the navigation container with Sentry
+      routingInstrumentation.registerNavigationContainer(navigationRef);
+    }
+  }, [navigationRef]);
 
   // While the auth state is loading, show nothing
   if (loading) {
@@ -100,4 +118,9 @@ export default function RootLayout() {
       </ThemeProvider>
     </PostHogProvider>
   );
+}
+
+// Wrap the root component with Sentry
+export default function RootLayout() {
+  return Sentry.wrap(RootLayoutContent);
 }
