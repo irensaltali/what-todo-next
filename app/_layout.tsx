@@ -42,7 +42,7 @@ Sentry.init({
 
 // Component to render the TaskEntryBottomSheet with context
 function AppWithTaskEntry() {
-  const { isTaskEntryVisible, hideTaskEntry } = useTaskEntry();
+  const { isTaskEntryVisible, hideTaskEntry, onTaskAdded } = useTaskEntry();
 
   return (
     <>
@@ -57,7 +57,11 @@ function AppWithTaskEntry() {
       <TaskEntryBottomSheet
         isVisible={isTaskEntryVisible}
         onClose={hideTaskEntry}
-        onTaskAdded={hideTaskEntry}
+        onTaskAdded={() => {
+          // Call both onTaskAdded to refresh task state, and hideTaskEntry to close the form
+          onTaskAdded();
+          hideTaskEntry();
+        }}
       />
     </>
   );

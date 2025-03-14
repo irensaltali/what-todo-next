@@ -291,86 +291,131 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Step 1: Perform all validations upfront
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a task title');
       return;
     }
 
+    setSubmitting(true);
+
     try {
-      setSubmitting(true);
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Error', 'You must be logged in to create a task');
+        setSubmitting(false);
         return;
       }
 
-      // Get the HTML content from the rich editor
+      // Prepare HTML content from rich editor
       let descriptionHTML = description;
       if (richEditorRef.current) {
         descriptionHTML = await richEditorRef.current.getContentHtml() || '';
       }
-
+      
       // Prepare task data with all required fields
       const taskData = {
         user_id: user.id,
         title: title.trim(),
         description: descriptionHTML.trim() || null,
-        parent_task_id: null, // Required field, null for top-level tasks
+        parent_task_id: null,
         priority: priority,
-        is_recursive: false, // Required field
-        recursion_count: null, // Optional field
-        recursion_end: null, // Optional field
-        outcome_value: null, // Optional field
-        difficulty: null, // Optional field
-        is_deleted: false, // Required field
-        status: 'ongoing' as 'ongoing', // Use the proper enum value
+        is_recursive: false,
+        recursion_count: null,
+        recursion_end: null,
+        outcome_value: null,
+        difficulty: null,
+        is_deleted: false,
+        status: 'ongoing' as 'ongoing',
         deadline: date ? date.toISOString() : null,
       };
-
-      // Save to database using our service instead of direct supabase call
-      const { data, error } = await createTask(taskData);
-
-      if (error) {
-        throw error;
-      }
-
-      // Create reminders if enabled and we have a task ID and date
-      if (reminders.length > 0 && date && data && data.id) {
-        // Create multiple reminders
-        const reminderPromises = reminders.map(async (reminderValue) => {
-          const reminderTime = calculateReminderTime(reminderValue);
-          if (reminderTime) {
-            const reminderData = {
-              task_id: data.id,
-              reminder_time: reminderTime,
-            };
-            return createTaskReminder(reminderData);
-          }
-          return null;
-        });
-        
-        // Process all reminder creation promises
-        await Promise.all(reminderPromises.filter(p => p !== null));
-      }
       
-      // Mark that changes have been saved - do this before resetting the form
-      setHasChanges(false);
+      // Step 2: Create a temporary ID for the task (for optimistic UI updates)
+      const tempTaskId = `temp-${Date.now()}`;
+      const tempTaskData = {
+        ...taskData,
+        id: tempTaskId,
+        created_at: new Date().toISOString(),
+      };
       
-      // Clear form 
-      resetForm();
-      
-      // Safely close without showing alert
-      safelyClose();
-      
-      // Notify parent
+      // Step 3: Update UI state immediately - this feels instant to the user
       if (onTaskAdded) {
+        // Create a temp task object for optimistic UI updates
+        const optimisticTask = {
+          ...tempTaskData,
+          // Add any required fields that might be used by the task list
+        };
+        
+        // Notify parent that a task was added - parent can immediately update UI
         onTaskAdded();
       }
+      
+      // Step 4: Close the form immediately to improve perceived performance
+      setHasChanges(false);
+      resetForm();
+      safelyClose();
+      
+      // UI is now updated, reset submitting state
+      setSubmitting(false);
+      
+      // Step 5: Perform the actual backend save in the background
+      const saveToBackend = async (retryCount = 0, maxRetries = 3) => {
+        try {
+          const { data, error } = await createTask(taskData);
+          
+          if (error) throw error;
+          
+          // Successfully saved to backend!
+          console.log('Task successfully saved to backend:', data?.id || 'unknown ID');
+          
+          // Create reminders if enabled and we have a task ID and date
+          if (reminders.length > 0 && date && data && data.id) {
+            const reminderPromises = reminders.map(async (reminderValue) => {
+              const reminderTime = calculateReminderTime(reminderValue);
+              if (reminderTime) {
+                const reminderData = {
+                  task_id: data.id,
+                  reminder_time: reminderTime,
+                };
+                return createTaskReminder(reminderData);
+              }
+              return null;
+            });
+            
+            await Promise.all(reminderPromises.filter(p => p !== null));
+          }
+          
+        } catch (error) {
+          console.error(`Error saving task (attempt ${retryCount + 1}):`, error);
+          
+          // Retry on failure if we haven't reached max retries
+          if (retryCount < maxRetries) {
+            // Exponential backoff: wait longer between each retry
+            const backoffTime = Math.pow(2, retryCount) * 1000;
+            setTimeout(() => {
+              saveToBackend(retryCount + 1, maxRetries);
+            }, backoffTime);
+          } else {
+            // If all retries fail, show a background notification
+            // This doesn't block the app, just informs the user
+            Alert.alert(
+              'Sync Issue',
+              'We had trouble saving your task to the cloud. Please check your connection and try again later.',
+              [{ text: 'OK' }],
+              { cancelable: true }
+            );
+          }
+        }
+      };
+      
+      // Start the background save process
+      saveToBackend();
+      
     } catch (error) {
-      console.error('Error creating task:', error);
-      Alert.alert('Error', 'Failed to create task. Please try again.');
-    } finally {
+      // This only catches errors in the initial validation/preparation phase
+      console.error('Error preparing task submission:', error);
+      Alert.alert('Error', 'Something went wrong while preparing your task. Please try again.');
       setSubmitting(false);
     }
   };

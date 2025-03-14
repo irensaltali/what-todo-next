@@ -46,13 +46,28 @@ export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMoreData, setHasMoreData] = useState(true);
-  const { isTaskEntryVisible, showTaskEntry, hideTaskEntry } = useTaskEntry();
+  const { 
+    isTaskEntryVisible, 
+    showTaskEntry, 
+    hideTaskEntry, 
+    taskVersion, 
+    onTaskUpdated, 
+    onTaskDeleted 
+  } = useTaskEntry();
   const { t } = useTranslation();
   const ITEMS_PER_PAGE = 15;
 
+  // Initial data load
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  // Auto-refresh when taskVersion changes (tasks added/updated/deleted)
+  useEffect(() => {
+    if (taskVersion > 0) { // Skip the initial render
+      fetchTasks();
+    }
+  }, [taskVersion]);
 
   const fetchTasks = async (pageToFetch = 0) => {
     try {
@@ -132,52 +147,73 @@ export default function TasksScreen() {
     try {
       const newStatus = isDone ? 'completed' as const : 'ongoing' as const;
       
-      const { error } = await updateTask(taskId, { 
-        status: newStatus
-      });
-      
-      if (error) throw error;
-      
-      // Update local state
+      // Update local state immediately for better UX
       setTasks(prev => 
         prev.map(task => 
           task.id === taskId ? { ...task, status: newStatus } : task
         )
       );
+      
+      // Notify other components that a task was updated
+      onTaskUpdated();
+      
+      // Perform the backend update
+      const { error } = await updateTask(taskId, { 
+        status: newStatus
+      });
+      
+      if (error) throw error;
     } catch (error) {
       console.error('Error updating task status:', error);
       Alert.alert('Error', 'Failed to update task');
+      
+      // Refresh the tasks list to get the correct state
+      fetchTasks();
     }
   };
 
   const deleteTask = async (taskId: string) => {
     try {
+      // Update local state immediately for better UX
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      
+      // Notify other components that a task was deleted
+      onTaskDeleted();
+      
+      // Perform the backend update
       const { error } = await hardDeleteTask(taskId);
       
       if (error) throw error;
-      
-      // Update local state
-      setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
       Alert.alert('Error', 'Failed to delete task');
+      
+      // Refresh the tasks list to get the correct state
+      fetchTasks();
     }
   };
 
   const archiveTask = async (taskId: string) => {
     try {
+      // Update local state immediately for better UX
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      
+      // Notify other components that a task was updated
+      onTaskUpdated();
+      
+      // Perform the backend update
       const { error } = await updateTask(taskId, { 
         status: 'canceled' as const,
         is_deleted: true
       });
       
       if (error) throw error;
-      
-      // Update local state
-      setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error archiving task:', error);
       Alert.alert('Error', 'Failed to archive task');
+      
+      // Refresh the tasks list to get the correct state
+      fetchTasks();
     }
   };
 
@@ -312,12 +348,6 @@ export default function TasksScreen() {
         showsVerticalScrollIndicator={false}
       />
     );
-  };
-
-  // Handle task added event
-  const handleTaskAdded = () => {
-    hideTaskEntry();
-    handleRefresh();
   };
 
   return (
