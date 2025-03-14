@@ -59,6 +59,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const [date, setDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [datePickerMode, setDatePickerMode] = useState<'date' | 'time'>('date');
+  const [tempDate, setTempDate] = useState<Date | null>(null); // Track temporary date during picker session
   const [isReminderEnabled, setIsReminderEnabled] = useState(false);
   const [reminders, setReminders] = useState<string[]>([]);
   const [showReminderOptions, setShowReminderOptions] = useState(false);
@@ -66,7 +67,6 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptionsPosition, setAdvancedOptionsPosition] = useState({ x: 0, y: 0 });
   const [submitting, setSubmitting] = useState(false);
-  const [reminderMenuPosition, setReminderMenuPosition] = useState({ top: -320, left: -100 });
   
   const translateY = useRef(new Animated.Value(height)).current;
   const titleInputRef = useRef<TextInput>(null);
@@ -86,7 +86,6 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     { label: '3 hours before', value: '3hours', offsetMinutes: 180 },
     { label: '1 day before', value: '1day', offsetMinutes: 60 * 24 },
     { label: '2 days before', value: '2days', offsetMinutes: 60 * 24 * 2 },
-    { label: '1 week before', value: '1week', offsetMinutes: 60 * 24 * 7 },
   ];
 
   useEffect(() => {
@@ -218,6 +217,8 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
 
   // Open the date picker with platform-specific handling
   const openDatePicker = () => {
+    // Store the current date as temp date before opening
+    setTempDate(date);
     setDatePickerMode('date');
     setShowDatePicker(true);
   };
@@ -231,23 +232,43 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     if (event.type !== 'dismissed' && selectedDate) {
       setDate(selectedDate);
       setHasChanges(true);
+    } else if (event.type === 'neutralButtonPressed') {
+      // Handle "clear" button if present
+      setDate(null);
+      setHasChanges(true);
     }
+    // If dismissed, keep the original date
   };
 
   // iOS date change handler - updates temporary state without dismissing
   const handleIOSDateChange = (event: any, selectedDate?: Date) => {
     // On iOS, onChange is triggered for every minor change
-    // We update the date but keep the picker open
+    // We update the temporary date but keep the picker open
     if (selectedDate) {
-      setDate(selectedDate);
+      setTempDate(selectedDate);
     }
   };
 
   // iOS date confirmation handler - called when Done is pressed
   const handleIOSDateConfirm = () => {
+    // When Done is pressed, commit the temp date to the actual date
+    // If tempDate is null but the picker is open, use the current date (today)
+    if (tempDate) {
+      setDate(tempDate);
+    } else {
+      setDate(new Date());
+    }
+    
     // Close the picker and mark that changes were made
     setShowDatePicker(false);
     setHasChanges(true);
+  };
+
+  // iOS date cancel handler - called when Cancel is pressed
+  const handleIOSDateCancel = () => {
+    // Discard any changes and keep the original date
+    setShowDatePicker(false);
+    // tempDate is not committed to date
   };
 
   const handleTitleChange = (text: string) => {
@@ -438,37 +459,6 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     }
   };
 
-  // Function to calculate the menu position based on available space
-  const calculateReminderMenuPosition = () => {
-    if (reminderButtonRef.current) {
-      reminderButtonRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-        // Calculate position based on screen boundaries
-        const menuWidth = 250;
-        const menuHeight = 360;
-        
-        // Default position
-        let top = -320;
-        let left = -100;
-        
-        // Adjust horizontal position to keep menu on screen
-        if (pageX + left + menuWidth > Dimensions.get('window').width) {
-          left = Dimensions.get('window').width - pageX - menuWidth - 10;
-        }
-        if (pageX + left < 0) {
-          left = 10 - pageX;
-        }
-        
-        // Adjust vertical position based on space available
-        // If showing below would go off screen, show above
-        if (pageY + height + menuHeight > Dimensions.get('window').height - 100) {
-          top = -menuHeight - 10;
-        }
-        
-        setReminderMenuPosition({ top, left });
-      });
-    }
-  };
-
   // Format date for display
   const formatDisplayDate = (date: Date | null): string => {
     if (!date) return 'Date';
@@ -505,13 +495,18 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
           transparent={true}
           visible={showDatePicker}
           animationType="slide"
-          onRequestClose={() => setShowDatePicker(false)}
+          onRequestClose={handleIOSDateCancel}
         >
           <View style={styles.datePickerBackdrop}>
+            <TouchableOpacity
+              style={{flex: 1}}
+              activeOpacity={1}
+              onPress={handleIOSDateCancel}
+            />
             <View style={styles.iosDatePickerWrapper}>
               <View style={styles.iosDatePickerContainer}>
                 <View style={styles.iosDatePickerHeader}>
-                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <TouchableOpacity onPress={handleIOSDateCancel}>
                     <Text style={styles.datePickerCancel}>Cancel</Text>
                   </TouchableOpacity>
                   <Text style={styles.datePickerTitle}>Select Date</Text>
@@ -520,7 +515,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
-                  value={date || new Date()}
+                  value={tempDate || date || new Date()}
                   mode={datePickerMode}
                   onChange={handleIOSDateChange}
                   style={styles.iosDatePicker}
@@ -538,7 +533,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     // For Android, show the native dialog
     return (
       <DateTimePicker
-        value={date || new Date()}
+        value={tempDate || date || new Date()}
         mode={datePickerMode}
         is24Hour={true}
         display="default"
@@ -593,8 +588,8 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
             >
               <View style={styles.handle} />
               
-              {/* Add backdrop for closing the advanced options menu when tapping outside */}
-              {showAdvancedOptions && (
+              {/* Add backdrop for closing any open menu when tapping outside */}
+              {(showAdvancedOptions || showReminderOptions) && (
                 <TouchableOpacity
                   style={styles.menuBackdrop}
                   activeOpacity={1}
@@ -695,89 +690,58 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     </Text>
                   </TouchableOpacity>
                   
-                  <TouchableOpacity 
-                    ref={reminderButtonRef}
-                    style={styles.metadataButton}
-                    onPress={() => {
-                      if (!date) {
-                        Alert.alert('Set a date first', 'Please set a deadline date before adding reminders.');
-                        return;
-                      }
-                      // Calculate position before showing the menu
-                      calculateReminderMenuPosition();
-                      setShowReminderOptions(!showReminderOptions);
-                      setHasChanges(true);
-                    }}
-                  >
-                    <Ionicons 
-                      name="alarm-outline" 
-                      size={22} 
-                      color={reminders.length > 0 ? "#FF9F1C" : "#8E8E93"} 
-                    />
-                    <Text style={[styles.metadataText, reminders.length > 0 && styles.metadataActive]}>
-                      {reminders.length > 0 ? `${reminders.length} Reminder${reminders.length > 1 ? 's' : ''}` : 'Reminder'}
-                    </Text>
+                  <View>
+                    <TouchableOpacity 
+                      ref={reminderButtonRef}
+                      style={styles.metadataButton}
+                      onPress={() => {
+                        if (!date) {
+                          Alert.alert('Set a date first', 'Please set a deadline date before adding reminders.');
+                          return;
+                        }
+                        setShowReminderOptions(!showReminderOptions);
+                        setHasChanges(true);
+                      }}
+                    >
+                      <Ionicons 
+                        name="alarm-outline" 
+                        size={22} 
+                        color={reminders.length > 0 ? "#FF9F1C" : "#8E8E93"} 
+                      />
+                      <Text style={[styles.metadataText, reminders.length > 0 && styles.metadataActive]}>
+                        {reminders.length > 0 ? `${reminders.length} Reminder${reminders.length > 1 ? 's' : ''}` : 'Reminder'}
+                      </Text>
+                    </TouchableOpacity>
                     
                     {showReminderOptions && (
-                      <>
-                        <TouchableOpacity
-                          style={styles.menuBackdrop}
-                          activeOpacity={1}
-                          onPress={handleReminderBackdropPress}
-                        />
-                        <View 
-                          style={[
-                            styles.reminderOptionsMenu,
-                            { top: reminderMenuPosition.top, left: reminderMenuPosition.left }
-                          ]}
-                        >
-                          <View style={styles.reminderOptionsHeader}>
-                            <Text style={styles.reminderOptionsTitle}>Set Reminders</Text>
-                            <TouchableOpacity
-                              onPress={handleReminderBackdropPress}
-                            >
-                              <Ionicons name="close" size={24} color="#8E8E93" />
-                            </TouchableOpacity>
-                          </View>
-                          <ScrollView 
-                            style={styles.reminderOptionsList}
-                            showsVerticalScrollIndicator={true}
-                            contentContainerStyle={{ paddingBottom: 8 }}
-                          >
-                            {reminderOptions.map((option) => (
-                              <TouchableOpacity
-                                key={option.value}
-                                style={[
-                                  styles.reminderOption,
-                                  reminders.includes(option.value) && styles.reminderOptionSelected
-                                ]}
-                                onPress={() => toggleReminderOption(option.value)}
-                              >
-                                <Text 
-                                  style={[
-                                    styles.reminderOptionText,
-                                    reminders.includes(option.value) && styles.reminderOptionTextSelected
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {option.label}
-                                </Text>
-                                {reminders.includes(option.value) && (
-                                  <Ionicons name="checkmark" size={16} color="#FF9F1C" />
-                                )}
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
+                      <View style={[
+                        styles.advancedOptionsMenu,
+                        { right: -40, bottom: 60, width: 220 }
+                      ]}>
+                        {reminderOptions.map((option) => (
                           <TouchableOpacity
-                            style={styles.reminderActionButton}
-                            onPress={handleReminderBackdropPress}
+                            key={option.value}
+                            style={styles.advancedOption}
+                            onPress={() => toggleReminderOption(option.value)}
                           >
-                            <Text style={styles.reminderActionButtonText}>Done</Text>
+                            <Ionicons 
+                              name={reminders.includes(option.value) ? "checkmark-circle" : "alarm-outline"} 
+                              size={18} 
+                              color={reminders.includes(option.value) ? "#FF9F1C" : "#8E8E93"} 
+                            />
+                            <Text 
+                              style={[
+                                styles.advancedOptionText,
+                                reminders.includes(option.value) && { color: '#FF9F1C', fontWeight: '500' }
+                              ]}
+                            >
+                              {option.label}
+                            </Text>
                           </TouchableOpacity>
-                        </View>
-                      </>
+                        ))}
+                      </View>
                     )}
-                  </TouchableOpacity>
+                  </View>
                   
                   <View>
                     <TouchableOpacity 
@@ -791,7 +755,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     {showAdvancedOptions && (
                       <View style={[
                         styles.advancedOptionsMenu,
-                        { right: 0, bottom: 60 } // Position above the button
+                        { right: 0, bottom: 60 }
                       ]}>
                         <TouchableOpacity style={styles.advancedOption}>
                           <Ionicons name="time-outline" size={18} color="#8E8E93" />
