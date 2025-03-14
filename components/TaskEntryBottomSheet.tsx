@@ -14,6 +14,7 @@ import {
   UIManager,
   StatusBar,
   SafeAreaView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -22,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../data/supabase';
 import { createTask } from '../data/taskService'; // Update import to use the specific file
+import { createTaskReminder } from '../data/taskReminderService'; // Import the reminder service
+import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
 
 const { height, width } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
@@ -63,6 +66,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   
   const translateY = useRef(new Animated.Value(height)).current;
   const titleInputRef = useRef<TextInput>(null);
+  const richEditorRef = useRef<RichEditor>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const { t } = useTranslation();
@@ -125,6 +129,9 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    if (richEditorRef.current) {
+      richEditorRef.current.setContentHTML('');
+    }
     setPriority(0);
     setDate(null);
     setIsReminderEnabled(false);
@@ -208,6 +215,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     }
 
     try {
+      setSubmitting(true);
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -215,23 +223,31 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         return;
       }
 
+      // Get the HTML content from the rich editor
+      let descriptionHTML = description;
+      if (richEditorRef.current) {
+        descriptionHTML = await richEditorRef.current.getContentHtml() || '';
+      }
+
       // Prepare task data with all required fields
       const taskData = {
         user_id: user.id,
         title: title.trim(),
-        description: description.trim() || null,
+        description: descriptionHTML.trim() || null,
         parent_task_id: null, // Required field, null for top-level tasks
         priority: priority,
         is_recursive: false, // Required field
+        recursion_count: null, // Optional field
+        recursion_end: null, // Optional field
+        outcome_value: null, // Optional field
+        difficulty: null, // Optional field
         is_deleted: false, // Required field
         status: 'ongoing' as 'ongoing', // Use the proper enum value
-        // Map the existing fields to the correct names
         deadline: date ? date.toISOString() : null,
-        // Add any other required fields from the Task interface
       };
 
       // Save to database using our service instead of direct supabase call
-      const { error } = await createTask(taskData);
+      const { data, error } = await createTask(taskData);
 
       if (error) {
         throw error;
@@ -245,9 +261,20 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
       if (onTaskAdded) {
         onTaskAdded();
       }
+
+      // Create reminder if enabled and we have a task ID and date
+      if (isReminderEnabled && date && data && data.id) {
+        const reminderData = {
+          task_id: data.id,
+          reminder_time: date.toISOString(),
+        };
+        await createTaskReminder(reminderData);
+      }
     } catch (error) {
       console.error('Error creating task:', error);
       Alert.alert('Error', 'Failed to create task. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -358,7 +385,11 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                 />
               )}
               
-              <View style={styles.content}>
+              <KeyboardAvoidingView
+                style={styles.content}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+              >
                 <View style={styles.headerBar}>
                   <TouchableOpacity 
                     style={styles.headerButton}
@@ -370,8 +401,11 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   <TouchableOpacity 
                     style={styles.headerButton}
                     onPress={handleSubmit}
+                    disabled={submitting}
                   >
-                    <Text style={styles.addButtonText}>Add</Text>
+                    <Text style={submitting ? styles.disabledButtonText : styles.addButtonText}>
+                      {submitting ? 'Adding...' : 'Add'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
@@ -387,26 +421,40 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                       placeholderTextColor="#8E8E93"
                     />
                   </View>
-                  
-                  <View style={styles.divider} />
-                  
-                  <ScrollView 
-                    style={styles.descriptionScrollView}
-                    showsVerticalScrollIndicator={true}
-                  >
-                    <TextInput
-                      style={styles.descriptionInput}
-                      placeholder="Description"
-                      value={description}
-                      onChangeText={(text) => {
-                        setDescription(text);
-                        setHasChanges(true);
-                      }}
-                      multiline
-                      textAlignVertical="top"
-                      placeholderTextColor="#8E8E93"
-                    />
-                  </ScrollView>
+                </View>
+                
+                <View style={styles.richEditorContainer}>
+                  <RichToolbar
+                    editor={richEditorRef}
+                    selectedIconTint="#FF9F1C"
+                    iconTint="#8E8E93"
+                    actions={[
+                      actions.setBold, 
+                      actions.setItalic, 
+                      actions.setUnderline, 
+                      actions.setStrikethrough,
+                      '|', 
+                      actions.insertBulletsList,
+                      actions.insertOrderedList
+                    ]}
+                    style={styles.richToolbar}
+                    iconSize={18}
+                    iconContainerStyle={{ paddingHorizontal: 6 }}
+                  />
+                  <RichEditor
+                    ref={richEditorRef}
+                    placeholder="Add a description..."
+                    initialContentHTML={description}
+                    onChange={(text) => {
+                      setDescription(text);
+                      setHasChanges(true);
+                    }}
+                    editorStyle={{
+                      backgroundColor: 'transparent',
+                      contentCSSText: 'font-size: 14px; padding: 12px; min-height: 110px; color: #2C2C2C;'
+                    }}
+                    containerStyle={styles.richEditorContent}
+                  />
                 </View>
                 
                 <View style={styles.metadataRow}>
@@ -490,7 +538,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     onChange={handleDateChange}
                   />
                 )}
-              </View>
+              </KeyboardAvoidingView>
             </Animated.View>
           </GestureDetector>
         </GestureHandlerRootView>
@@ -564,6 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
     overflow: 'hidden',
+    flex: 0,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -584,15 +633,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEEEEE',
     marginHorizontal: 0, // Remove horizontal margin
   },
-  descriptionScrollView: {
-    maxHeight: Math.min(40 * 10, height * 0.3), // Set maxHeight to 10 lines or 30% of screen height
+  richEditorContainer: {
+    minHeight: 146,
+    maxHeight: Math.min(250, height * 0.3),
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#DDDDDD',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  descriptionInput: {
-    fontSize: 14,
-    padding: 12,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    textAlign: 'left',
+  richToolbar: {
+    backgroundColor: '#F8F8F8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    height: 36,
+    paddingHorizontal: 8,
+  },
+  richEditorContent: {
+    flex: 1,
+    minHeight: 110,
   },
   metadataRow: {
     flexDirection: 'row',
@@ -600,6 +660,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
+    marginTop: 0,
     marginBottom: 16,
   },
   metadataButton: {
@@ -623,6 +684,11 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#FF9F1C',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  disabledButtonText: {
+    color: '#CCCCCC',
     fontWeight: '700',
     fontSize: 16,
   },
