@@ -171,7 +171,7 @@ export default function HomeScreen() {
   };
 
   const handleTaskPress = (taskId: string) => {
-    router.push(`/(tabs)/${taskId}`);
+    router.push(`/(task-details)/${taskId}?source=home`);
   };
 
   const handleFocusPress = () => {

@@ -280,7 +280,7 @@ export default function TasksScreen() {
             {/* Make the task title area a separate touchable */}
             <TouchableOpacity 
               style={styles.taskContentContainer}
-              onPress={() => router.push(`/(task-details)/${task.id}`)}
+              onPress={() => router.push(`/(task-details)/${task.id}?source=task-list`)}
             >
               <Animated.View style={{ flex: 1, opacity }}>
                 <View style={styles.taskTitleContainer}>
