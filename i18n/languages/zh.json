@@ -16,6 +16,7 @@
   "status": {
     "ongoing": "进行中",
     "inprocess": "处理中",
+    "inprogress": "进行中",
     "canceled": "已取消",
     "completed": "已完成"
   },

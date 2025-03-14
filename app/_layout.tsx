@@ -122,5 +122,8 @@ function RootLayoutContent() {
 
 // Wrap the root component with Sentry
 export default function RootLayout() {
-  return Sentry.wrap(RootLayoutContent);
+  // Create a wrapped component
+  const WrappedRootLayoutContent = Sentry.wrap(RootLayoutContent);
+  // Return it as a JSX element
+  return <WrappedRootLayoutContent />;
 }

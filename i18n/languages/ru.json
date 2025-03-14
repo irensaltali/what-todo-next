@@ -16,6 +16,7 @@
   "status": {
     "ongoing": "В процессе",
     "inprocess": "В обработке",
+    "inprogress": "В работе",
     "canceled": "Отменено",
     "completed": "Завершено"
   },

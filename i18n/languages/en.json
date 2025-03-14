@@ -16,6 +16,7 @@
   "status": {
     "ongoing": "Ongoing",
     "inprocess": "In Process",
+    "inprogress": "In Progress",
     "canceled": "Canceled",
     "completed": "Completed"
   },

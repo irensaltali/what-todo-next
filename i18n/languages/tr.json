@@ -16,6 +16,7 @@
   "status": {
     "ongoing": "Devam Ediyor",
     "inprocess": "İşlemde",
+    "inprogress": "İşlemde",
     "canceled": "İptal Edildi",
     "completed": "Tamamlandı"
   },
