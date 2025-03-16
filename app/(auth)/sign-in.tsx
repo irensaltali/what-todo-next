@@ -17,9 +17,12 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import { supabase } from '@/data/supabase';
+import { useTheme } from '@/lib/styles/useTheme';
+import { authStyles } from '@/lib/styles/auth';
 
 export default function SignInScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,42 +55,42 @@ export default function SignInScreen() {
 
   return (
     <ScrollView 
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.content}
+      style={[authStyles.container, { paddingTop: insets.top }]}
+      contentContainerStyle={authStyles.content}
       showsVerticalScrollIndicator={false}>
       <Animated.View 
         entering={FadeInDown.delay(100).springify()}
-        style={styles.imageContainer}
+        style={authStyles.imageContainer}
       >
         <Image
           source={require('@/assets/images/signin.png')}
-          style={styles.image}
+          style={authStyles.image}
           resizeMode="contain"
         />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(200).springify()}>
-        <Text style={styles.title}>Welcome Back 👋</Text>
-        <Text style={styles.subtitle}>
+        <Text style={authStyles.title}>Welcome Back 👋</Text>
+        <Text style={authStyles.subtitle}>
           Sign in to continue
         </Text>
       </Animated.View>
 
       <Animated.View
-        style={styles.form}
+        style={authStyles.form}
         entering={FadeInDown.delay(300).springify()}>
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={authStyles.errorContainer}>
+            <Text style={authStyles.errorText}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={20} color="#8E8E93" />
+        <View style={authStyles.inputContainer}>
+          <Ionicons name="mail-outline" size={20} color={colors.icon.secondary} />
           <TextInput
-            style={styles.input}
+            style={authStyles.input}
             placeholder="Email"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.text.placeholder}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -95,12 +98,12 @@ export default function SignInScreen() {
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={20} color="#8E8E93" />
+        <View style={authStyles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={20} color={colors.icon.secondary} />
           <TextInput
-            style={styles.input}
+            style={authStyles.input}
             placeholder="Password"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.text.placeholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -108,22 +111,22 @@ export default function SignInScreen() {
         </View>
 
         <Pressable 
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[authStyles.button, loading && authStyles.buttonDisabled]}
           onPress={handleSignIn}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={authStyles.buttonText}>Sign In</Text>
           )}
         </Pressable>
       </Animated.View>
 
       <Animated.View entering={FadeInUp.delay(600).springify()}>
-        <Text style={styles.footer}>
+        <Text style={authStyles.footer}>
           Don't have an account?{' '}
-          <Link href="/sign-up" style={styles.footerLink}>
+          <Link href="/sign-up" style={authStyles.footerLink}>
             Sign up
           </Link>
         </Text>
@@ -131,84 +134,3 @@ export default function SignInScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    padding: 24,
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  image: {
-    width: '100%',
-    height: 200,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 32,
-  },
-  form: {
-    gap: 16,
-  },
-  errorContainer: {
-    backgroundColor: '#FFE5E5',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1C1C1E',
-  },
-  button: {
-    backgroundColor: '#FF9F1C',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  footer: {
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 32,
-  },
-  footerLink: {
-    color: '#FF9F1C',
-    fontWeight: 'bold',
-  },
-});
