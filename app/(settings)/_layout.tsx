@@ -2,9 +2,13 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { useAuth } from '@/lib/useAuth';
 import { Redirect } from 'expo-router';
+import { layoutStyles } from '@/lib/styles/layout';
+import { useTheme } from '@/lib/styles/useTheme';
+import { typography } from '@/lib/styles/theme';
 
 export default function SettingsLayout() {
   const { session, loading } = useAuth();
+  const theme = useTheme();
 
   // If not authenticated, redirect to sign in
   if (!session && !loading) {
@@ -21,13 +25,13 @@ export default function SettingsLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.background.primary
         },
         headerShadowVisible: false,
         headerTitleStyle: {
-          fontSize: 16,
+          fontSize: typography.fontSize.md,
           fontWeight: '600',
-          color: '#1C1C1E',
+          color: theme.colors.text.primary
         },
         headerTitleAlign: 'center',
         headerBackTitle: '',

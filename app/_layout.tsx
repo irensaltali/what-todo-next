@@ -8,10 +8,12 @@ import { ThemeProvider } from '../contexts/ThemeContext';
 import useLanguageStore from '@/store/languageStore';
 import i18n from '@/i18n/i18n';
 import { I18nManager } from 'react-native';
-import { PostHogProvider } from 'posthog-react-native'
+import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import * as Sentry from '@sentry/react-native';
 import config from '@/lib/config';
 import Constants from 'expo-constants';
+import logger, { EventName } from '@/lib/logger';
+import { Platform, AppState } from 'react-native';
 
 declare global {
   interface Window {
@@ -69,6 +71,7 @@ function AppWithTaskEntry() {
 
 function RootLayoutContent() {
   const { session, loading } = useAuth();
+  const posthog = usePostHog();
 
   useEffect(() => {
     window.frameworkReady?.();
@@ -93,11 +96,99 @@ function RootLayoutContent() {
     }
   }, [navigationRef]);
 
+  // Initialize our centralized logger
+  useEffect(() => {
+    const initializeLoggerAndTracking = async () => {
+      try {
+        // Initialize the logger with environment settings
+        await logger.initializeLogger();
+        
+        // Set the PostHog instance globally for convenience
+        if (posthog) {
+          logger.setGlobalPostHogInstance(posthog);
+          
+          // Track app launch event
+          logger.trackEvent(posthog, EventName.APP_LAUNCHED, {
+            device: {
+              platform: Platform.OS,
+              version: Platform.Version,
+            },
+            app: {
+              version: config.appVersion,
+              environment: config.env,
+            },
+            language,
+          });
+        }
+        
+        // Set up navigation tracking for screens
+        if (navigationRef) {
+          navigationRef.addListener('state', () => {
+            const currentRoute = navigationRef.getCurrentRoute();
+            if (currentRoute) {
+              // Track screen view
+              logger.trackEvent(posthog, EventName.SCREEN_VIEWED, {
+                screen: currentRoute.name,
+                params: currentRoute.params,
+              });
+            }
+          });
+        }
+        
+        // Set up session tracking
+        logger.trackEvent(posthog, EventName.SESSION_STARTED);
+        
+        // Set up app state listeners for background/foreground events
+        if (AppState) {
+          AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+              logger.trackEvent(posthog, EventName.APP_FOREGROUNDED);
+            } else if (nextAppState === 'background') {
+              logger.trackEvent(posthog, EventName.APP_BACKGROUNDED);
+            }
+          });
+        }
+        
+        // Log initialization success
+        logger.info('App fully initialized');
+        
+      } catch (error) {
+        console.error('Error initializing logger:', error);
+      }
+    };
+    
+    initializeLoggerAndTracking();
+  }, [posthog]);
+
   // While the auth state is loading, show nothing
   if (loading) {
     return null;
   }
 
+  return (
+    <ThemeProvider>
+      <StoreProvider>
+        <TaskEntryProvider>
+          {!session ? (
+            // If there's no session, only show auth screens
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+            </Stack>
+          ) : (
+            // If there is a session, show protected screens with task entry
+            <AppWithTaskEntry />
+          )}
+        </TaskEntryProvider>
+      </StoreProvider>
+    </ThemeProvider>
+  );
+}
+
+// Default export for easy imports
+export default function RootLayout() {
+  // Create a wrapped component
+  const WrappedRootLayoutContent = Sentry.wrap(RootLayoutContent);
+  // Return it as a JSX element
   return (
     <PostHogProvider 
       apiKey={config.posthog.apiKey} 
@@ -105,29 +196,7 @@ function RootLayoutContent() {
         host: config.posthog.host
       }}
     >
-      <ThemeProvider>
-        <StoreProvider>
-          <TaskEntryProvider>
-            {!session ? (
-              // If there's no session, only show auth screens
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(auth)" />
-              </Stack>
-            ) : (
-              // If there is a session, show protected screens with task entry
-              <AppWithTaskEntry />
-            )}
-          </TaskEntryProvider>
-        </StoreProvider>
-      </ThemeProvider>
+      <WrappedRootLayoutContent />
     </PostHogProvider>
   );
-}
-
-// Wrap the root component with Sentry
-export default function RootLayout() {
-  // Create a wrapped component
-  const WrappedRootLayoutContent = Sentry.wrap(RootLayoutContent);
-  // Return it as a JSX element
-  return <WrappedRootLayoutContent />;
 }
