@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Animated,
   Modal,
-  ScrollView,
   Dimensions,
   Platform,
   Alert,
@@ -22,11 +21,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../data/supabase';
-import { createTask } from '../data/taskService'; // Update import to use the specific file
-import { createTaskReminder } from '../data/taskReminderService'; // Import the reminder service
+import { createTask, PRIORITY_LEVELS } from '../data/taskService';
+import { createTaskReminder } from '../data/taskReminderService';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
+import { usePostHog } from 'posthog-react-native';
+import logger, { EventName } from '../lib/logger';
+import * as Sentry from '@sentry/react-native';
 
-const { height, width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
 const SHEET_MAX_HEIGHT = height * 0.9; // 90% of screen height
 
@@ -35,13 +37,6 @@ interface TaskEntryBottomSheetProps {
   onClose: () => void;
   onTaskAdded?: () => void;
 }
-
-const PRIORITY_LEVELS = [
-  { level: 0, label: 'No priority' },
-  { level: 1, label: 'High' },
-  { level: 2, label: 'Medium' },
-  { level: 3, label: 'Low' },
-];
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -55,6 +50,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [richContent, setRichContent] = useState('');
   const [priority, setPriority] = useState(0);
   const [date, setDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -67,15 +63,19 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [advancedOptionsPosition, setAdvancedOptionsPosition] = useState({ x: 0, y: 0 });
   const [submitting, setSubmitting] = useState(false);
+  const [useRichEditor, setUseRichEditor] = useState(true);
+  const [editorError, setEditorError] = useState<Error | null>(null);
   
   const translateY = useRef(new Animated.Value(height)).current;
   const titleInputRef = useRef<TextInput>(null);
   const richEditorRef = useRef<RichEditor>(null);
+  const plainTextEditorRef = useRef<TextInput>(null);
   const reminderButtonRef = useRef<View>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const { t } = useTranslation();
   const { top } = useSafeAreaInsets();
+  const posthog = usePostHog();
 
   // Define reminder options
   const reminderOptions = [
@@ -142,12 +142,50 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     // No need for keyboard listeners anymore
   }, [isVisible]);
 
+  // Effect for safely initializing and cleaning up rich editor
+  useEffect(() => {
+    // When component mounts or becomes visible, initialize editor
+    if (isVisible && richEditorRef.current && useRichEditor) {
+      console.log('[DEBUG] RichEditor: Sheet became visible, initializing editor');
+      // Use setTimeout to ensure the editor has fully mounted
+      setTimeout(() => {
+        try {
+          console.log('[DEBUG] RichEditor: Attempting to set initial content');
+          richEditorRef.current?.setContentHTML('');
+          console.log('[DEBUG] RichEditor: Initial content set successfully');
+        } catch (error) {
+          console.error('[DEBUG] RichEditor: Error initializing rich editor:', error);
+          // If we get an error, switch to plain text editor
+          setEditorError(error as Error);
+          setUseRichEditor(false);
+        }
+      }, 300);
+    } else {
+      console.log('[DEBUG] RichEditor: Sheet visibility change:', isVisible);
+    }
+
+    // Cleanup function for when component unmounts
+    return () => {
+      // Cleanup any editor state if needed
+      if (!isVisible && richEditorRef.current && useRichEditor) {
+        console.log('[DEBUG] RichEditor: Cleaning up editor on unmount/close');
+        try {
+          richEditorRef.current?.setContentHTML('');
+          console.log('[DEBUG] RichEditor: Cleanup successful');
+        } catch (error) {
+          console.log('[DEBUG] RichEditor: Editor cleanup error:', error);
+        }
+      }
+    };
+  }, [isVisible, useRichEditor]);
+
   const resetForm = () => {
+    console.log('[DEBUG] RichEditor: Resetting form state');
     setTitle('');
     setDescription('');
-    if (richEditorRef.current) {
-      richEditorRef.current.setContentHTML('');
-    }
+    setRichContent('');
+    // Don't try to directly manipulate the editor here
+    // We'll handle this in the useEffect
     setPriority(0);
     setDate(null);
     setTempDate(null);
@@ -291,6 +329,8 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
   };
 
   const handleSubmit = async () => {
+    console.log('[TaskEntry] Submit button pressed');
+    
     // Step 1: Perform all validations upfront
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a task title');
@@ -298,6 +338,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     }
 
     setSubmitting(true);
+    console.log('[TaskEntry] Submission started');
 
     try {
       // Get the current user
@@ -308,17 +349,30 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         return;
       }
 
-      // Prepare HTML content from rich editor
-      let descriptionHTML = description;
-      if (richEditorRef.current) {
-        descriptionHTML = await richEditorRef.current.getContentHtml() || '';
-      }
+      // Use the stored content based on which editor is active
+      let descriptionHTML = useRichEditor ? richContent.trim() : description.trim();
+      console.log('[TaskEntry] Using content from state:', { 
+        editorType: useRichEditor ? 'rich' : 'plain',
+        contentLength: descriptionHTML.length,
+        contentType: typeof descriptionHTML,
+        contentPreview: descriptionHTML.substring(0, 50) + (descriptionHTML.length > 50 ? '...' : '')
+      });
+      
+      // Track analytics event for task creation attempt
+      logger.trackEvent(posthog, EventName.TASK_CREATION_STARTED, {
+        has_deadline: !!date,
+        has_description: !!descriptionHTML,
+        priority_level: priority,
+        uses_rich_editor: useRichEditor,
+        has_reminders: reminders.length > 0,
+        reminders_count: reminders.length,
+      });
       
       // Prepare task data with all required fields
       const taskData = {
         user_id: user.id,
         title: title.trim(),
-        description: descriptionHTML.trim() || null,
+        description: descriptionHTML || null,
         parent_task_id: null,
         priority: priority,
         is_recursive: false,
@@ -330,6 +384,13 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         status: 'ongoing' as 'ongoing',
         deadline: date ? date.toISOString() : null,
       };
+      
+      console.log('[TaskEntry] Task data prepared:', {
+        title: taskData.title,
+        descriptionLength: taskData.description ? taskData.description.length : 0,
+        priority: taskData.priority,
+        deadline: taskData.deadline
+      });
       
       // Step 2: Create a temporary ID for the task (for optimistic UI updates)
       const tempTaskId = `temp-${Date.now()}`;
@@ -364,10 +425,19 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         try {
           const { data, error } = await createTask(taskData);
           
-          if (error) throw error;
+          if (error) {
+            throw error;
+          }
           
           // Successfully saved to backend!
-          console.log('Task successfully saved to backend:', data?.id || 'unknown ID');
+          console.log('[TaskEntry] Task successfully saved to backend:', data?.id || 'unknown ID');
+          
+          // Track successful task creation in analytics
+          logger.trackEvent(posthog, EventName.TASK_CREATED, {
+            task_id: data?.id,
+            has_deadline: !!taskData.deadline,
+            priority_level: taskData.priority,
+          });
           
           // Create reminders if enabled and we have a task ID and date
           if (reminders.length > 0 && date && data && data.id) {
@@ -384,10 +454,32 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
             });
             
             await Promise.all(reminderPromises.filter(p => p !== null));
+            
+            // Track reminder creation analytics
+            logger.trackEvent(posthog, EventName.REMINDER_ADDED, {
+              task_id: data.id,
+              reminders_count: reminders.length,
+            });
           }
           
         } catch (error) {
-          console.error(`Error saving task (attempt ${retryCount + 1}):`, error);
+          console.error(`[TaskEntry] Error saving task (attempt ${retryCount + 1}):`, error);
+          
+          // Log error to Sentry with context
+          Sentry.withScope(scope => {
+            scope.setTag('action', 'task_creation');
+            scope.setTag('retry_count', String(retryCount));
+            scope.setExtra('task_title', taskData.title);
+            scope.setExtra('priority', taskData.priority);
+            scope.setExtra('has_reminders', reminders.length > 0);
+            Sentry.captureException(error);
+          });
+          
+          // Track failed task creation in analytics
+          logger.trackEvent(posthog, EventName.TASK_CREATION_FAILED, {
+            error_message: (error as Error).message,
+            retry_count: retryCount,
+          });
           
           // Retry on failure if we haven't reached max retries
           if (retryCount < maxRetries) {
@@ -414,7 +506,20 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
       
     } catch (error) {
       // This only catches errors in the initial validation/preparation phase
-      console.error('Error preparing task submission:', error);
+      console.error('[TaskEntry] Error preparing task submission:', error);
+      
+      // Log error to Sentry with context
+      Sentry.withScope(scope => {
+        scope.setTag('action', 'task_preparation');
+        scope.setExtra('task_title', title);
+        Sentry.captureException(error);
+      });
+      
+      // Track error in analytics
+      logger.trackEvent(posthog, EventName.ERROR_OCCURRED, {
+        error_message: (error as Error).message,
+      });
+      
       Alert.alert('Error', 'Something went wrong while preparing your task. Please try again.');
       setSubmitting(false);
     }
@@ -689,37 +794,113 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                 </View>
                 
                 <View style={styles.richEditorContainer}>
-                  <RichToolbar
-                    editor={richEditorRef}
-                    selectedIconTint="#FF9F1C"
-                    iconTint="#8E8E93"
-                    actions={[
-                      actions.setBold, 
-                      actions.setItalic, 
-                      actions.setUnderline, 
-                      actions.setStrikethrough,
-                      '|', 
-                      actions.insertBulletsList,
-                      actions.insertOrderedList
-                    ]}
-                    style={styles.richToolbar}
-                    iconSize={18}
-                    iconContainerStyle={{ paddingHorizontal: 6 }}
-                  />
-                  <RichEditor
-                    ref={richEditorRef}
-                    placeholder="Add notes or description..."
-                    initialContentHTML={description}
-                    onChange={(text) => {
-                      setDescription(text);
-                      setHasChanges(true);
-                    }}
-                    editorStyle={{
-                      backgroundColor: 'transparent',
-                      contentCSSText: 'font-size: 14px; padding: 10px 12px; min-height: 110px; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, sans-serif;'
-                    }}
-                    containerStyle={styles.richEditorContent}
-                  />
+                  {useRichEditor ? (
+                    <>
+                      <RichToolbar
+                        editor={richEditorRef}
+                        selectedIconTint="#FF9F1C"
+                        iconTint="#8E8E93"
+                        actions={[
+                          actions.setBold, 
+                          actions.setItalic, 
+                          actions.setUnderline, 
+                          actions.setStrikethrough,
+                          '|', 
+                          actions.insertBulletsList,
+                          actions.insertOrderedList
+                        ]}
+                        style={styles.richToolbar}
+                        iconSize={18}
+                        iconContainerStyle={{ paddingHorizontal: 6 }}
+                      />
+                      <View style={styles.editorErrorWrapper}>
+                        <RichEditor
+                          ref={richEditorRef}
+                          placeholder="Add notes or description..."
+                          initialContentHTML=""
+                          onChange={(content) => {
+                            console.log('[DEBUG] RichEditor: Content changed, type:', typeof content);
+                            try {
+                              // Only update content if we have a valid string
+                              if (typeof content === 'string') {
+                                setRichContent(content);
+                                setHasChanges(true);
+                              } else {
+                                console.warn('[DEBUG] RichEditor: Received non-string content');
+                                // Try to gracefully handle non-string content
+                                if (content && typeof (content as any).toString === 'function') {
+                                  setRichContent((content as any).toString());
+                                  setHasChanges(true);
+                                }
+                              }
+                            } catch (error) {
+                              console.error('[DEBUG] RichEditor: Error in onChange handler:', error);
+                              // Switch to plain text as a fallback
+                              setEditorError(error as Error);
+                              setUseRichEditor(false);
+                            }
+                          }}
+                          onFocus={() => {
+                            console.log('[DEBUG] RichEditor: Editor focused');
+                          }}
+                          onBlur={() => {
+                            console.log('[DEBUG] RichEditor: Editor lost focus');
+                          }}
+                          editorStyle={{
+                            backgroundColor: 'transparent',
+                            contentCSSText: 'font-size: 14px; padding: 10px 12px; min-height: 110px; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, sans-serif;'
+                          }}
+                          containerStyle={styles.richEditorContent}
+                          useContainer={true}
+                        />
+                      </View>
+                      <View style={styles.editorSwitchWrapper}>
+                        <TouchableOpacity 
+                          style={styles.editorSwitchButton}
+                          onPress={() => setUseRichEditor(false)}
+                        >
+                          <Text style={styles.editorSwitchText}>
+                            Switch to plain text editor
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : (
+                    // Plain text fallback editor
+                    <View style={styles.plainEditorContainer}>
+                      <TextInput
+                        ref={plainTextEditorRef}
+                        style={styles.plainTextEditor}
+                        placeholder="Add notes or description..."
+                        value={description}
+                        onChangeText={(text) => {
+                          setDescription(text);
+                          setHasChanges(true);
+                        }}
+                        multiline
+                        placeholderTextColor="rgba(142, 142, 147, 0.6)"
+                        selectionColor="#FF9F1C"
+                      />
+                      {editorError && (
+                        <Text style={styles.editorErrorText}>
+                          Rich editor unavailable. Using plain text mode.
+                        </Text>
+                      )}
+                      <View style={styles.editorSwitchWrapper}>
+                        <TouchableOpacity 
+                          style={styles.editorSwitchButton}
+                          onPress={() => {
+                            setEditorError(null);
+                            setUseRichEditor(true);
+                          }}
+                        >
+                          <Text style={styles.editorSwitchText}>
+                            Try rich text editor
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
                 </View>
                 
                 <View style={styles.metadataRow}>
@@ -1146,5 +1327,39 @@ const styles = StyleSheet.create({
     color: '#000000',
     height: 220,
     width: '100%',
+  },
+  editorErrorWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  plainEditorContainer: {
+    flex: 1,
+    padding: 12,
+    backgroundColor: 'white',
+  },
+  plainTextEditor: {
+    flex: 1,
+    height: 150,
+    fontSize: 14,
+    color: '#2C2C2C',
+    textAlignVertical: 'top',
+  },
+  editorErrorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: 6,
+  },
+  editorSwitchWrapper: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F2',
+  },
+  editorSwitchButton: {
+    paddingVertical: 6,
+  },
+  editorSwitchText: {
+    color: '#8E8E93',
+    fontSize: 12,
   },
 });
