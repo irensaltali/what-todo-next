@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Image,
   Pressable,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -22,72 +20,11 @@ import FeaturedTaskCard from '@/components/FeaturedTaskCard';
 import useProfileStore from '@/store/profileStore';
 import { Profile } from '@/store/models/profile';
 import { useTranslation } from 'react-i18next';
+import { homeStyles, homeResponsive, STATUS_COLORS, STATUS_ICON_COLORS } from '@/lib/styles/home';
+import { useTheme } from '@/lib/styles/useTheme';
 
-// Get screen dimensions
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
-// Create a responsive design system
-const size = {
-  base: 8,
-  font: screenWidth * 0.04,
-  radius: 8,
-  padding: screenWidth * 0.04,
-};
-
-// Responsive font sizes
-const fontSize = {
-  small: size.font * 0.75,
-  medium: size.font,
-  large: size.font * 1.5,
-  xlarge: size.font * 2,
-};
-
-// Responsive spacing
-const spacing = {
-  xs: size.base * 0.5,
-  sm: size.base * 1.1,
-  md: size.base * 1.5,
-  lg: size.base * 2,
-  xl: size.base * 3,
-};
-
-// Responsive sizing
-const sizing = {
-  avatarSize: screenWidth * 0.12,
-  iconSize: {
-    small: screenWidth * 0.05,
-    medium: screenWidth * 0.06,
-    large: screenWidth * 0.08,
-  },
-  progressCircle: screenWidth * 0.12,
-  progressWidth: screenWidth * 0.012,
-  statusIcon: screenWidth * 0.1,
-  statusDot: screenWidth * 0.02,
-  settingsButton: screenWidth * 0.1,
-};
-
-interface Task {
-  id: string;
-  title: string;
-  type: string;
-  task_count: number;
-  progress: number;
-  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
-}
-
-const STATUS_COLORS = {
-  ongoing: '#5593F1',
-  inprogress: '#FFC247',
-  canceled: '#F26E56',
-  completed: '#52C1C4',
-};
-
-const STATUS_ICON_COLORS = {
-  ongoing: '#4C85DB',
-  inprogress: '#E5B03F',
-  canceled: '#DA624D',
-  completed: '#4AAFB2',
-};
+// Get responsive variables from the centralized home styles
+const { sizing, statusSectionHeight } = homeResponsive;
 
 const STATUS_COUNTS = {
   ongoing: 24,
@@ -123,10 +60,10 @@ export default function HomeScreen() {
   const { profile, loading: profileLoading, error: profileError, loadProfile, getDefaultAvatar } = useProfileStore();
   const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
   const { t } = useTranslation();
+  const theme = useTheme();
   const scrollY = useSharedValue(0);
   const lastScrollY = useSharedValue(0);
   const scrollVelocity = useSharedValue(0);
-  const statusSectionHeight = screenHeight * 0.16; // Height of the status section when expanded
   const collapsibleHeight = useSharedValue(statusSectionHeight);
   const summaryOpacity = useSharedValue(0);
 
@@ -251,9 +188,9 @@ export default function HomeScreen() {
   });
 
   const StatusCard = ({ status, count, color, iconColor }: { status: string; count: number; color: string; iconColor: string }) => (
-    <View style={[styles.statusCard, { backgroundColor: color }]}>
-      <View style={styles.statusContent}>
-        <View style={[styles.statusIcon, { backgroundColor: iconColor }]}>
+    <View style={[homeStyles.statusCard, { backgroundColor: color }]}>
+      <View style={homeStyles.statusContent}>
+        <View style={[homeStyles.statusIcon, { backgroundColor: iconColor }]}>
           <Ionicons
             name={
               status === 'ongoing'
@@ -268,9 +205,9 @@ export default function HomeScreen() {
             color="#fff"
           />
         </View>
-        <View style={styles.statusTextContainer}>
-          <Text style={styles.statusTitle}>{t(`status.${status}`)}</Text>
-          <Text style={styles.statusLabel}>{count} {t('home.tasks')}</Text>
+        <View style={homeStyles.statusTextContainer}>
+          <Text style={homeStyles.statusTitle}>{t(`status.${status}`)}</Text>
+          <Text style={homeStyles.statusLabel}>{count} {t('home.tasks')}</Text>
         </View>
       </View>
     </View>
@@ -278,32 +215,32 @@ export default function HomeScreen() {
 
   const TaskCard = ({ task }: { task: Task }) => (
     <Pressable
-      style={styles.taskCard}
+      style={homeStyles.taskCard}
       onPress={() => handleTaskPress(task.id)}
     >
-      <View style={styles.taskInfo}>
-        <Text style={styles.taskTitle}>{task.title}</Text>
-        <Text style={styles.taskType}>{task.type}</Text>
-        <Text style={styles.taskCount}>{task.task_count} {t('home.tasks')}</Text>
+      <View style={homeStyles.taskInfo}>
+        <Text style={homeStyles.taskTitle}>{task.title}</Text>
+        <Text style={homeStyles.taskType}>{task.type}</Text>
+        <Text style={homeStyles.taskCount}>{task.task_count} {t('home.tasks')}</Text>
       </View>
     </Pressable>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={homeStyles.container}>
       {/* Fixed Header Section */}
-      <View style={[styles.fixedHeaderContainer, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
+      <View style={[homeStyles.fixedHeaderContainer, { paddingTop: insets.top }]}>
+        <View style={homeStyles.header}>
+          <View style={homeStyles.headerLeft}>
             <Pressable onPress={handleProfilePress}>
               <Image
                 source={profile.avatar_url ? { uri: profile.avatar_url } : monsterImages[getDefaultAvatar()]}
-                style={styles.avatar}
+                style={homeStyles.avatar}
               />
             </Pressable>
             <View>
-              <Text style={styles.greeting}>{t('greeting', { name: profile.name || 'User' })} 👋</Text>
-              <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
+              <Text style={homeStyles.greeting}>{t('greeting', { name: profile.name || 'User' })} 👋</Text>
+              <Text style={homeStyles.subtitle}>{t('home.subtitle')}</Text>
             </View>
           </View>
         </View>
@@ -319,22 +256,22 @@ export default function HomeScreen() {
 
         {/* Fixed Status Overview title with consistent left alignment */}
         <Pressable
-          style={styles.sectionTitleContainer}
+          style={homeStyles.sectionTitleContainer}
           onPress={toggleStatusSection}
         >
-          <Text style={styles.sectionTitle}>{t('home.status_overview')}</Text>
+          <Text style={homeStyles.sectionTitle}>{t('home.status_overview')}</Text>
 
-          <View style={styles.headerRightContainer}>
-            <Animated.View style={[styles.statusSummary, statusSummaryStyle]}>
+          <View style={homeStyles.headerRightContainer}>
+            <Animated.View style={[homeStyles.statusSummary, statusSummaryStyle]}>
               {Object.entries(STATUS_COUNTS).map(([status, count]) => (
-                <View key={status} style={styles.statusBadge}>
+                <View key={status} style={homeStyles.statusBadge}>
                   <View
                     style={[
-                      styles.statusDot,
+                      homeStyles.statusDot,
                       { backgroundColor: STATUS_COLORS[status as keyof typeof STATUS_COLORS] }
                     ]}
                   />
-                  <Text style={styles.statusCount}>{count}</Text>
+                  <Text style={homeStyles.statusCount}>{count}</Text>
                 </View>
               ))}
             </Animated.View>
@@ -342,7 +279,7 @@ export default function HomeScreen() {
             <Ionicons
               name={statusSectionCollapsed ? "chevron-forward" : "chevron-down"}
               size={sizing.iconSize.small}
-              color="#8E8E93"
+              color={theme.colors.text.placeholder}
             />
           </View>
         </Pressable>
@@ -350,16 +287,16 @@ export default function HomeScreen() {
 
       {/* Scrollable Content */}
       <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={homeStyles.scrollView}
+        contentContainerStyle={homeStyles.scrollContent}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.collapsibleContainer}>
+        <View style={homeStyles.collapsibleContainer}>
           {/* Status section cards */}
-          <Animated.View style={[styles.collapsibleContent, statusSectionStyle]}>
-            <View style={styles.statusGrid}>
+          <Animated.View style={[homeStyles.collapsibleContent, statusSectionStyle]}>
+            <View style={homeStyles.statusGrid}>
               {Object.entries(STATUS_COUNTS).map(([status, count]) => (
                 <StatusCard
                   key={status}
@@ -373,13 +310,13 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
-        <View style={styles.tasksSection}>
-          <Text style={styles.sectionTitle}>{t('home.upcoming')}</Text>
+        <View style={homeStyles.tasksSection}>
+          <Text style={homeStyles.sectionTitle}>{t('home.upcoming')}</Text>
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} />
           ))}
           {tasks.length === 0 && (
-            <Text style={styles.emptyStateText}>{t('home.empty_tasks')}</Text>
+            <Text style={homeStyles.emptyStateText}>{t('home.empty_tasks')}</Text>
           )}
         </View>
       </Animated.ScrollView>
@@ -387,182 +324,11 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6F6F6',
-  },
-  fixedHeaderContainer: {
-    backgroundColor: '#F6F6F6',
-    zIndex: 10,
-    paddingHorizontal: spacing.md,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    // paddingHorizontal: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerRightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: sizing.avatarSize,
-    height: sizing.avatarSize,
-    borderRadius: sizing.avatarSize / 2,
-    marginRight: spacing.md,
-  },
-  greeting: {
-    fontSize: fontSize.large,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-  },
-  subtitle: {
-    fontSize: fontSize.small,
-    color: '#8E8E93',
-    marginTop: spacing.xs,
-  },
-  collapsibleContainer: {
-    // marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: 'transparent',
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 0, // Removed padding for left alignment
-  },
-  sectionTitle: {
-    fontSize: fontSize.medium,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginBottom: spacing.sm,
-  },
-  collapsibleContent: {
-    overflow: 'hidden',
-  },
-  statusSummary: {
-    flexDirection: 'row',
-    marginRight: spacing.sm,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  statusDot: {
-    width: sizing.statusDot,
-    height: sizing.statusDot,
-    borderRadius: sizing.statusDot / 2,
-    marginRight: spacing.xs,
-  },
-  statusCount: {
-    fontSize: fontSize.small,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  statusGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: 0,
-  },
-  statusCard: {
-    width: '48%',
-    borderRadius: size.radius * 1.5,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusIcon: {
-    width: sizing.statusIcon,
-    height: sizing.statusIcon,
-    borderRadius: sizing.statusIcon / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusTextContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    marginLeft: spacing.sm,
-  },
-  statusTitle: {
-    fontSize: fontSize.medium,
-    fontWeight: 'bold',
-    color: '#080100',
-    marginBottom: spacing.xs / 2,
-  },
-  statusLabel: {
-    fontSize: fontSize.small,
-    color: '#080100',
-    opacity: 0.9,
-  },
-  tasksSection: {
-    flex: 1,
-    paddingHorizontal: 0,
-    marginHorizontal: spacing.md,
-    marginTop: 0,
-    marginBottom: spacing.sm,
-  },
-  taskCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: size.radius * 1.5,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#080100',
-    shadowColor: '#010101',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  taskInfo: {
-    flex: 1,
-  },
-  taskTitle: {
-    fontSize: fontSize.medium,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: spacing.xs,
-  },
-  taskType: {
-    fontSize: fontSize.small,
-    color: '#8E8E93',
-    marginBottom: spacing.xs,
-  },
-  taskCount: {
-    fontSize: fontSize.small * 0.9,
-    color: '#8E8E93',
-  },
-  emptyStateText: {
-    fontSize: fontSize.medium,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: spacing.lg,
-  },
-});
+interface Task {
+  id: string;
+  title: string;
+  type: string;
+  task_count: number;
+  progress: number;
+  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
+}
