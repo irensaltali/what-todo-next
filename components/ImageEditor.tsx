@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   Image,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { imageEditorStyles, imageEditorColors } from '@/lib/styles/image-editor';
 
 interface ImageEditorProps {
   visible: boolean;
@@ -129,45 +129,45 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
       animationType="slide"
       onRequestClose={onCancel}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Edit Profile Picture</Text>
-          <Pressable style={styles.closeButton} onPress={onCancel}>
-            <Ionicons name="close" size={24} color="#1C1C1E" />
+      <View style={imageEditorStyles.container}>
+        <View style={imageEditorStyles.header}>
+          <Text style={imageEditorStyles.title}>Edit Profile Picture</Text>
+          <Pressable style={imageEditorStyles.closeButton} onPress={onCancel}>
+            <Ionicons name="close" size={24} color={imageEditorColors.text} />
           </Pressable>
         </View>
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={imageEditorStyles.errorContainer}>
+            <Text style={imageEditorStyles.errorText}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.imageContainer}>
+        <View style={imageEditorStyles.imageContainer}>
           {image ? (
             <GestureDetector gesture={composed}>
-              <Animated.View style={[styles.imageWrapper, animatedStyle]}>
+              <Animated.View style={[imageEditorStyles.imageWrapper, animatedStyle]}>
                 <Image
                   source={{ uri: image }}
-                  style={styles.image}
+                  style={imageEditorStyles.image}
                   accessibilityLabel="Profile picture preview"
                 />
               </Animated.View>
             </GestureDetector>
           ) : (
-            <View style={styles.placeholder}>
-              <Ionicons name="person" size={64} color="#8E8E93" />
+            <View style={imageEditorStyles.placeholder}>
+              <Ionicons name="person" size={64} color={imageEditorColors.subtleText} />
             </View>
           )}
         </View>
 
-        <View style={styles.controls}>
+        <View style={imageEditorStyles.controls}>
           <Pressable
-            style={styles.button}
+            style={imageEditorStyles.button}
             onPress={pickImage}
             disabled={loading}>
-            <Ionicons name="image-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>
+            <Ionicons name="image-outline" size={20} color={imageEditorColors.white} />
+            <Text style={imageEditorStyles.buttonText}>
               {image ? 'Change Picture' : 'Select Picture'}
             </Text>
           </Pressable>
@@ -175,25 +175,25 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
           {image && (
             <>
               <Pressable
-                style={[styles.button, styles.deleteButton]}
+                style={[imageEditorStyles.button, imageEditorStyles.deleteButton]}
                 onPress={() => setImage(null)}
                 disabled={loading}>
-                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                <Text style={[styles.buttonText, styles.deleteButtonText]}>
+                <Ionicons name="trash-outline" size={20} color={imageEditorColors.deleteText} />
+                <Text style={[imageEditorStyles.buttonText, imageEditorStyles.deleteButtonText]}>
                   Remove
                 </Text>
               </Pressable>
 
               <Pressable
-                style={styles.button}
+                style={imageEditorStyles.button}
                 onPress={handleSave}
                 disabled={loading}>
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={imageEditorColors.white} />
                 ) : (
                   <>
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Save</Text>
+                    <Ionicons name="checkmark" size={20} color={imageEditorColors.white} />
+                    <Text style={imageEditorStyles.buttonText}>Save</Text>
                   </>
                 )}
               </Pressable>
@@ -201,8 +201,8 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
           )}
         </View>
 
-        <View style={styles.instructions}>
-          <Text style={styles.instructionText}>
+        <View style={imageEditorStyles.instructions}>
+          <Text style={imageEditorStyles.instructionText}>
             • Supported formats: JPG, PNG{'\n'}
             • Maximum file size: 5MB{'\n'}
             • Best results with square images
@@ -212,99 +212,3 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorContainer: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: '#FFE5E5',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-  },
-  imageContainer: {
-    aspectRatio: 1,
-    margin: 16,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageWrapper: {
-    width: '100%',
-    height: '100%',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
-  },
-  controls: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 16,
-  },
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#FF6B00',
-    borderRadius: 12,
-    padding: 16,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteButton: {
-    backgroundColor: '#FFE5E5',
-  },
-  deleteButtonText: {
-    color: '#FF3B30',
-  },
-  instructions: {
-    padding: 16,
-  },
-  instructionText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    lineHeight: 20,
-  },
-});

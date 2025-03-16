@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   Modal,
   Platform,
@@ -24,6 +23,7 @@ import Animated, {
 import Svg, { Circle, Line } from 'react-native-svg';
 import { useTheme } from '../contexts/ThemeContext';
 import { Audio } from 'expo-av';
+import { focusTaskViewStyles, focusViewColors } from '@/lib/styles/focus-task-view';
 
 interface FocusTaskViewProps {
   visible: boolean;
@@ -48,32 +48,8 @@ const formatTime = (totalSeconds: number) => {
 // Create the animated circle component
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// Theme colors
-const lightTheme = {
-  background: ['#FAFAFA', '#F5F5F5', '#EFEFEF'] as const,
-  text: '#333',
-  subText: '#777',
-  iconColor: '#555',
-  modeToggleBg: 'rgba(0, 0, 0, 0.05)',
-  resetButtonBg: 'rgba(0, 0, 0, 0.05)',
-  startButtonBg: '#FF9F1C',
-  circleBackground: '#E0E0E0',
-  dominoMarkerDark: '#666',
-  dominoMarkerLight: '#CCC',
-};
-
-const darkTheme = {
-  background: ['#121212', '#1E1E1E', '#252525'] as const,
-  text: '#E0E0E0',
-  subText: '#AAAAAA',
-  iconColor: '#BBBBBB',
-  modeToggleBg: 'rgba(255, 255, 255, 0.1)',
-  resetButtonBg: 'rgba(255, 255, 255, 0.1)',
-  startButtonBg: '#FF9F1C', // Keep accent color the same
-  circleBackground: '#444444',
-  dominoMarkerDark: '#AAAAAA',
-  dominoMarkerLight: '#666666',
-};
+// Get dimensions for responsive layout
+const { width } = Dimensions.get('window');
 
 export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const insets = useSafeAreaInsets();
@@ -107,7 +83,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
   const { isDarkMode, toggleTheme } = useTheme();
   
   // Get the current theme based on isDarkMode state
-  const theme = isDarkMode ? darkTheme : lightTheme;
+  const theme = isDarkMode ? focusViewColors.dark : focusViewColors.light;
   
   // Progress circle animation
   const progress = useSharedValue(0);
@@ -508,17 +484,17 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[focusTaskViewStyles.container, { paddingTop: insets.top }]}>
         <LinearGradient
           colors={theme.background}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
 
         {/* Close Button (X) */}
         <TouchableOpacity
-          style={styles.closeButton}
+          style={focusTaskViewStyles.closeButton}
           onPress={handleClose}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -526,16 +502,16 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         </TouchableOpacity>
 
         {/* Toggle Switch */}
-        <View style={[styles.modeToggle, { backgroundColor: theme.modeToggleBg }]}>
+        <View style={[focusTaskViewStyles.modeToggle, { backgroundColor: theme.modeToggleBg }]}>
           <Pressable
-            style={[styles.modeButton, mode === 'pomo' && styles.modeButtonActive]}
+            style={[focusTaskViewStyles.modeButton, mode === 'pomo' && focusTaskViewStyles.modeButtonActive]}
             onPress={() => setMode('pomo')}
           >
             <Text
               style={[
-                styles.modeButtonText,
+                focusTaskViewStyles.modeButtonText,
                 { color: theme.subText },
-                mode === 'pomo' && styles.modeButtonTextActive,
+                mode === 'pomo' && focusTaskViewStyles.modeButtonTextActive,
               ]}
             >
               Pomo
@@ -543,16 +519,16 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
           </Pressable>
           <Pressable
             style={[
-              styles.modeButton,
-              mode === 'stopwatch' && styles.modeButtonActive,
+              focusTaskViewStyles.modeButton,
+              mode === 'stopwatch' && focusTaskViewStyles.modeButtonActive,
             ]}
             onPress={() => setMode('stopwatch')}
           >
             <Text
               style={[
-                styles.modeButtonText,
+                focusTaskViewStyles.modeButtonText,
                 { color: theme.subText },
-                mode === 'stopwatch' && styles.modeButtonTextActive,
+                mode === 'stopwatch' && focusTaskViewStyles.modeButtonTextActive,
               ]}
             >
               Stopwatch
@@ -561,11 +537,11 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         </View>
 
         {/* Task Title */}
-        <Text style={[styles.taskTitle, { color: theme.subText }]}>{task.title}</Text>
+        <Text style={[focusTaskViewStyles.taskTitle, { color: theme.subText }]}>{task.title}</Text>
 
         {/* Circle Timer */}
-        <View style={styles.clockSection}>
-          <View style={styles.circleContainer}>
+        <View style={focusTaskViewStyles.clockSection}>
+          <View style={focusTaskViewStyles.circleContainer}>
             <Svg width={circleSize} height={circleSize}>
               {/* Background circle */}
               <Circle
@@ -612,9 +588,9 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
               })}
             </Svg>
             
-            <View style={styles.clockTextContainer}>
-              <Text style={[styles.clockText, { color: theme.text }]}>{formatTime(time)}</Text>
-              <Text style={[styles.statusText, { color: theme.subText }]}>
+            <View style={focusTaskViewStyles.clockTextContainer}>
+              <Text style={[focusTaskViewStyles.clockText, { color: theme.text }]}>{formatTime(time)}</Text>
+              <Text style={[focusTaskViewStyles.statusText, { color: theme.subText }]}>
                 {mode === 'pomo' ? 
                   (isBreak ? (sessionCount === maxSessionsBeforeLongBreak - 1 ? 'Long Break' : 'Short Break') : 'Focus Time') : 
                   'Elapsed Time'}
@@ -622,15 +598,15 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             </View>
           </View>
 
-          <View style={styles.clockControls}>
+          <View style={focusTaskViewStyles.clockControls}>
             <TouchableOpacity
-              style={[styles.clockButton, styles.resetButton, { backgroundColor: theme.resetButtonBg }]}
+              style={[focusTaskViewStyles.clockButton, focusTaskViewStyles.resetButton, { backgroundColor: theme.resetButtonBg }]}
               onPress={handleReset}
             >
               <Ionicons name="refresh" size={24} color={theme.iconColor} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.clockButton, styles.startButton, { backgroundColor: theme.startButtonBg }]}
+              style={[focusTaskViewStyles.clockButton, focusTaskViewStyles.startButton, { backgroundColor: theme.startButtonBg }]}
               onPress={handleStartStop}
             >
               <Ionicons
@@ -643,9 +619,9 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
         </View>
 
         {/* Bottom Menu */}
-        <View style={[styles.bottomMenu, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
+        <View style={[focusTaskViewStyles.bottomMenu, { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 }]}>
           <TouchableOpacity 
-            style={styles.menuItem}
+            style={focusTaskViewStyles.menuItem}
             onPress={toggleTheme}
           >
             <Ionicons 
@@ -656,7 +632,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.menuItem}
+            style={focusTaskViewStyles.menuItem}
             onPress={handleSoundToggle}
           >
             <Ionicons 
@@ -666,7 +642,7 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
             />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={focusTaskViewStyles.menuItem}>
             <Ionicons name="settings-outline" size={24} color={theme.iconColor} />
           </TouchableOpacity>
         </View>
@@ -674,122 +650,3 @@ export function FocusTaskView({ visible, onClose, task }: FocusTaskViewProps) {
     </Modal>
   );
 }
-
-const { width } = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 16 + (Platform.OS === 'ios' ? 44 : 0),
-    left: 16,
-    zIndex: 10,
-  },
-  modeToggle: {
-    flexDirection: 'row',
-    marginTop: 40,
-    marginHorizontal: width * 0.30,
-    borderRadius: 16,
-    padding: 2,
-    alignSelf: 'center',
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 6,
-    alignItems: 'center',
-    borderRadius: 14,
-  },
-  modeButtonActive: {
-    backgroundColor: '#FF9F1C',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  modeButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#777',
-  },
-  modeButtonTextActive: {
-    color: '#FFF',
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#777',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  clockSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-    flex: 1,
-  },
-  circleContainer: {
-    position: 'relative',
-    width: width * 0.7,
-    height: width * 0.7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clockTextContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  clockText: {
-    fontFamily: Platform.select({
-      ios: 'Menlo',
-      android: 'monospace',
-      default: 'monospace',
-    }),
-    fontSize: 36,
-    fontWeight: '600',
-    color: '#333',
-    letterSpacing: 1,
-  },
-  statusText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#777',
-  },
-  clockControls: {
-    flexDirection: 'row',
-    marginTop: 40,
-    gap: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clockButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-  startButton: {
-    backgroundColor: '#FF9F1C',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  bottomMenu: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-    width: '100%',
-  },
-  menuItem: {
-    padding: 12,
-  },
-});
