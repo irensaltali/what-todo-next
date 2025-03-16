@@ -42,6 +42,12 @@ export interface ContentStyles {
   languageName: TextStyle;
   regionName: TextStyle;
   noteText: TextStyle;
+  
+  // Settings styles
+  settingItem: ViewStyle;
+  settingInfo: ViewStyle;
+  settingTitle: TextStyle;
+  settingDescription: TextStyle;
 }
 
 // Create content styles
@@ -195,5 +201,29 @@ export const contentStyles = StyleSheet.create<ContentStyles>({
     textAlign: 'center',
     marginTop: theme.spacing.xl,
     marginHorizontal: theme.spacing.lg,
+  },
+  
+  // Settings styles
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.medium,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: theme.spacing.lg,
+  },
+  settingTitle: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold as any,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  settingDescription: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
   },
 }); 
