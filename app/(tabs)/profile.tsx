@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Image,
   Pressable,
   ScrollView,
@@ -17,6 +16,8 @@ import { format } from 'date-fns';
 import useProfileStore from '@/store/profileStore';
 import { Profile } from '@/store/models/profile';
 import { useTranslation } from 'react-i18next';
+import { profileStyles } from '@/lib/styles/profile';
+import { useTheme } from '@/lib/styles/useTheme';
 
 interface TaskCounts {
   inProcess: number;
@@ -46,6 +47,7 @@ export default function ProfileScreen() {
   });
   const [currentTime, setCurrentTime] = useState(new Date());
   const { t } = useTranslation();
+  const theme = useTheme();
 
   useEffect(() => {
     initializeProfile();
@@ -116,58 +118,58 @@ export default function ProfileScreen() {
 
   const MenuItem = ({ icon, label, route, translationKey }: { icon: string; label: string; route: string, translationKey?: string }) => (
     <Pressable
-      style={styles.menuItem}
+      style={profileStyles.menuItem}
       onPress={() => router.push(`/(settings)/${route}`)}
       android_ripple={{ color: 'rgba(0, 0, 0, 0.1)' }}>
-      <View style={styles.menuItemContent}>
-        <View style={styles.menuItemLeft}>
-          <Ionicons name={icon as any} size={24} color="#212529" />
-          <Text style={styles.menuItemLabel}>{translationKey ? t(translationKey) : label}</Text>
+      <View style={profileStyles.menuItemContent}>
+        <View style={profileStyles.menuItemLeft}>
+          <Ionicons name={icon as any} size={24} color={theme.colors.text.primary} />
+          <Text style={profileStyles.menuItemLabel}>{translationKey ? t(translationKey) : label}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#6C757D" />
+        <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
       </View>
     </Pressable>
   );
 
   return (
     <ScrollView 
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={[profileStyles.container, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.statusBar}>
-        <Text style={styles.timeText}>
+      <View style={profileStyles.statusBar}>
+        <Text style={profileStyles.timeText}>
           {format(currentTime, 'h:mm a')}
         </Text>
       </View>
 
-      <View style={styles.profileSection}>
-        <View style={styles.metricsRow}>
-          <View style={styles.metric}>
-            <Text style={styles.metricNumber}>{taskCounts.inProcess}</Text>
-            <Text style={styles.metricLabel}>{t('profile.in_process')}</Text>
+      <View style={profileStyles.profileSection}>
+        <View style={profileStyles.metricsRow}>
+          <View style={profileStyles.metric}>
+            <Text style={profileStyles.metricNumber}>{taskCounts.inProcess}</Text>
+            <Text style={profileStyles.metricLabel}>{t('profile.in_process')}</Text>
           </View>
           
           <Image
             source={profile.avatar_url ? { uri: profile.avatar_url } : monsterImages[getDefaultAvatar()]}
-            style={styles.profileImage}
+            style={profileStyles.profileImage}
           />
           
-          <View style={styles.metric}>
-            <Text style={styles.metricNumber}>{taskCounts.completed}</Text>
-            <Text style={styles.metricLabel}>{t('profile.completed')}</Text>
+          <View style={profileStyles.metric}>
+            <Text style={profileStyles.metricNumber}>{taskCounts.completed}</Text>
+            <Text style={profileStyles.metricLabel}>{t('profile.completed')}</Text>
           </View>
         </View>
-        <Text style={styles.userName}>{profile.name || 'User'}</Text>
+        <Text style={profileStyles.userName}>{profile.name || 'User'}</Text>
       </View>
 
       <Pressable 
-        style={styles.editButton}
+        style={profileStyles.editButton}
         onPress={() => router.push('/profile/edit')}
       >
-        <Text style={styles.editButtonText}>{t('profile.edit_profile')}</Text>
+        <Text style={profileStyles.editButtonText}>{t('profile.edit_profile')}</Text>
       </Pressable>
 
-      <View style={styles.menuSection}>
+      <View style={profileStyles.menuSection}>
         <MenuItem icon="notifications-outline" label="Notifications" route="notifications" translationKey="profile.notifications" />
         <MenuItem icon="shield-checkmark-outline" label="Security" route="security" translationKey="profile.security" />
         <MenuItem icon="globe-outline" label="Language & Region" route="language" translationKey="profile.language_region" />
@@ -176,133 +178,11 @@ export default function ProfileScreen() {
       </View>
 
       <Pressable 
-        style={styles.signOutButton}
+        style={profileStyles.signOutButton}
         onPress={handleSignOut}
       >
-        <Text style={styles.signOutText}>{t('profile.sign_out')}</Text>
+        <Text style={profileStyles.signOutText}>{t('profile.sign_out')}</Text>
       </Pressable>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  statusBar: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  timeText: {
-    fontSize: 16,
-    color: '#212529',
-    fontWeight: '500',
-  },
-  profileSection: {
-    alignItems: 'center',
-    padding: 16,
-    marginTop: 8,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-  },
-  metric: {
-    alignItems: 'center',
-  },
-  metricNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 4,
-  },
-  metricLabel: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  editButton: {
-    backgroundColor: '#FF6B00',
-    marginHorizontal: 16,
-    marginTop: 24,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  menuSection: {
-    backgroundColor: '#fff',
-    marginTop: 24,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  menuItem: {
-    height: 56,
-    justifyContent: 'center',
-  },
-  menuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    height: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#DEE2E6',
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  menuItemLabel: {
-    fontSize: 16,
-    color: '#212529',
-  },
-  signOutButton: {
-    marginHorizontal: 16,
-    marginVertical: 24,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFE5E5',
-  },
-  signOutText: {
-    color: '#FF3B30',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
