@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   Platform,
   Modal,
@@ -10,7 +9,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isAfter, startOfDay } from 'date-fns';
-import { useTheme, spacing, typography, borderRadius } from '../lib/styles';
+import { useTheme } from '../lib/styles/useTheme';
+import { datePickerStyles } from '../lib/styles/date-picker';
 
 interface DatePickerProps {
   date: Date;
@@ -60,7 +60,7 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
     <View>
       <Pressable
         style={[
-          styles.container, 
+          datePickerStyles.container, 
           { 
             backgroundColor: colors.background.card,
             ...shadows.medium
@@ -70,14 +70,14 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
         onPress={openPicker}
       >
         <Ionicons name="calendar-outline" size={20} color={colors.icon.secondary} />
-        <Text style={[styles.dateText, { color: colors.text.primary }]}>
+        <Text style={[datePickerStyles.dateText, { color: colors.text.primary }]}>
           {format(date, 'MMMM d, yyyy')}
         </Text>
         <Ionicons name="chevron-down" size={20} color={colors.icon.secondary} />
       </Pressable>
 
       {error && (
-        <Text style={[styles.errorText, { color: colors.text.error }]}>
+        <Text style={[datePickerStyles.errorText, { color: colors.text.error }]}>
           {error}
         </Text>
       )}
@@ -90,22 +90,22 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
           onRequestClose={() => setShowPicker(false)}
         >
           <Pressable
-            style={[styles.modalOverlay, { backgroundColor: colors.background.modal }]}
+            style={[datePickerStyles.modalOverlay, { backgroundColor: colors.background.modal }]}
             onPress={() => setShowPicker(false)}
           >
             <View style={[
-              styles.modalContent, 
+              datePickerStyles.modalContent, 
               { 
                 backgroundColor: colors.background.card,
                 ...shadows.medium 
               }
             ]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              <View style={datePickerStyles.modalHeader}>
+                <Text style={[datePickerStyles.modalTitle, { color: colors.text.primary }]}>
                   Select Date
                 </Text>
                 <Pressable
-                  style={styles.modalCloseButton}
+                  style={datePickerStyles.modalCloseButton}
                   onPress={() => setShowPicker(false)}
                 >
                   <Ionicons name="close" size={24} color={colors.icon.primary} />
@@ -117,7 +117,7 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
                 display={Platform.OS === 'ios' ? 'inline' : 'default'}
                 onChange={handleDateChange}
                 minimumDate={today}
-                style={styles.picker}
+                style={datePickerStyles.picker}
               />
             </View>
           </Pressable>
@@ -126,49 +126,3 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  dateText: {
-    flex: 1,
-    fontSize: typography.fontSize.md,
-  },
-  errorText: {
-    fontSize: typography.fontSize.xs,
-    marginTop: spacing.xs,
-    marginLeft: spacing.xs,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    width: '90%',
-    maxWidth: 400,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  modalTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: '700',
-  },
-  modalCloseButton: {
-    padding: spacing.xs,
-  },
-  picker: {
-    height: 300,
-  },
-});
