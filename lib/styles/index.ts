@@ -6,6 +6,7 @@ export * from './layout';
 export * from './content';
 export * from './home';
 export * from './profile';
+export * from './task-list';
 
 // Utility function to create dynamic styles based on theme
 export const createStyles = (stylesFn: (theme: ReturnType<typeof import('./useTheme').useTheme>) => any) => {

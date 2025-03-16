@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Pressable,
   FlatList,
   ActivityIndicator,
@@ -23,6 +22,8 @@ import { useTaskEntry } from '@/contexts/TaskEntryContext';
 import { useTranslation } from 'react-i18next';
 import { getUserTasks, updateTask, hardDeleteTask } from '../../data/taskService';
 import type { Task as ServiceTask } from '../../data/taskService';
+import { taskListStyles } from '@/lib/styles/task-list';
+import { useTheme } from '@/lib/styles/useTheme';
 
 // Group tasks by list
 const groupTasksByList = (tasks: AppTask[], t: Function) => {
@@ -55,6 +56,7 @@ export default function TasksScreen() {
     onTaskDeleted 
   } = useTaskEntry();
   const { t } = useTranslation();
+  const theme = useTheme();
   const ITEMS_PER_PAGE = 15;
 
   // Initial data load
@@ -243,53 +245,53 @@ export default function TasksScreen() {
     
     const renderRightActions = () => {
       return (
-        <View style={styles.rightActions}>
+        <View style={taskListStyles.rightActions}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.archiveButton]}
+            style={[taskListStyles.actionButton, taskListStyles.archiveButton]}
             onPress={() => archiveTask(task.id)}
           >
             <Ionicons name="archive-outline" size={20} color="#fff" />
-            <Text style={styles.actionText}>{t('task_list.archive')}</Text>
+            <Text style={taskListStyles.actionText}>{t('task_list.archive')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
+            style={[taskListStyles.actionButton, taskListStyles.deleteButton]}
             onPress={() => deleteTask(task.id)}
           >
             <Ionicons name="trash-outline" size={20} color="#fff" />
-            <Text style={styles.actionText}>{t('task_list.delete')}</Text>
+            <Text style={taskListStyles.actionText}>{t('task_list.delete')}</Text>
           </TouchableOpacity>
         </View>
       );
     };
     
     return (
-      <GestureHandlerRootView style={styles.swipeContainer}>
+      <GestureHandlerRootView style={taskListStyles.swipeContainer}>
         <Swipeable renderRightActions={renderRightActions}>
-          <View style={styles.taskItem}>
+          <View style={taskListStyles.taskItem}>
             {/* Create a larger touch target around checkbox */}
             <TouchableOpacity
-              style={styles.checkboxContainer}
+              style={taskListStyles.checkboxContainer}
               onPress={handleCheckboxToggle}
               hitSlop={{left: 10, right: 10 }}
             >
-              <View style={[styles.checkbox, isDone && styles.checkboxChecked]}>
+              <View style={[taskListStyles.checkbox, isDone && taskListStyles.checkboxChecked]}>
                 {isDone && <Ionicons name="checkmark" size={14} color="#fff" />}
               </View>
             </TouchableOpacity>
             
             {/* Make the task title area a separate touchable */}
             <TouchableOpacity 
-              style={styles.taskContentContainer}
+              style={taskListStyles.taskContentContainer}
               onPress={() => router.push(`/(task-details)/${task.id}?source=task-list`)}
             >
               <Animated.View style={{ flex: 1, opacity }}>
-                <View style={styles.taskTitleContainer}>
+                <View style={taskListStyles.taskTitleContainer}>
                   <Animated.Text 
                     style={[
-                      styles.taskTitle,
+                      taskListStyles.taskTitle,
                       {
                         textDecorationLine: isDone ? 'line-through' : 'none',
-                        textDecorationColor: '#8E8E93',
+                        textDecorationColor: theme.colors.text.placeholder,
                       }
                     ]}
                     numberOfLines={1}
@@ -307,8 +309,8 @@ export default function TasksScreen() {
   };
 
   const ListHeader = ({ title }: { title: string }) => (
-    <View style={styles.listHeader}>
-      <Text style={styles.listTitle}>{title}</Text>
+    <View style={taskListStyles.listHeader}>
+      <Text style={taskListStyles.listTitle}>{title}</Text>
     </View>
   );
 
@@ -321,7 +323,7 @@ export default function TasksScreen() {
         data={sections}
         keyExtractor={([listName]) => listName}
         renderItem={({ item: [listName, listTasks] }) => (
-          <View style={styles.section}>
+          <View style={taskListStyles.section}>
             <ListHeader title={listName} />
             {listTasks.map((task) => (
               <TaskItem key={task.id} task={task} />
@@ -342,7 +344,7 @@ export default function TasksScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           hasMoreData ? (
-            <ActivityIndicator style={styles.loader} size="small" color="#FF9F1C" />
+            <ActivityIndicator style={taskListStyles.loader} size="small" color="#FF9F1C" />
           ) : null
         }
         showsVerticalScrollIndicator={false}
@@ -351,16 +353,16 @@ export default function TasksScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('task_list.title')}</Text>
+    <View style={[taskListStyles.container, { paddingTop: insets.top }]}>
+      <View style={taskListStyles.header}>
+        <Text style={taskListStyles.title}>{t('task_list.title')}</Text>
       </View>
 
       {tasks.length > 0 ? (
         renderTaskList()
       ) : (
         <ScrollView
-          contentContainerStyle={styles.emptyListContainer}
+          contentContainerStyle={taskListStyles.emptyListContainer}
           refreshControl={
             <RefreshControl
               refreshing={refreshing || loading}
@@ -372,134 +374,13 @@ export default function TasksScreen() {
             />
           }
         >
-          <View style={styles.emptyState}>
-            <Ionicons name="list" size={48} color="#8E8E93" />
-            <Text style={styles.emptyStateText}>{t('task_list.no_tasks')}</Text>
-            <Text style={styles.emptyStateHint}>{t('task_list.pull_to_refresh')}</Text>
+          <View style={taskListStyles.emptyState}>
+            <Ionicons name="list" size={48} color={theme.colors.text.placeholder} />
+            <Text style={taskListStyles.emptyStateText}>{t('task_list.no_tasks')}</Text>
+            <Text style={taskListStyles.emptyStateHint}>{t('task_list.pull_to_refresh')}</Text>
           </View>
         </ScrollView>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-  },
-  section: {
-    marginBottom: 16,
-  },
-  listHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(242, 242, 247, 0.8)',
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-  },
-  swipeContainer: {
-    backgroundColor: '#F2F2F7',
-  },
-  taskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderBottomColor: '#F2F2F7',
-    borderBottomWidth: 2,
-  },
-  checkboxContainer: {
-    paddingRight: 8,
-  },
-  taskContentContainer: {
-    flex: 1,
-    paddingVertical: 8,
-    marginLeft: 4,
-  },
-  taskTitleContainer: {
-    flex: 1,
-  },
-  taskTitle: {
-    fontSize: 16,
-    color: '#1C1C1E',
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#8E8E93',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 0, // Remove left margin as it's now on the left side
-  },
-  checkboxChecked: {
-    backgroundColor: '#8E8E93',  // Changed from #52C1C4 to #8E8E93 to match completed task text color
-    borderColor: '#8E8E93',      // Changed to match the background
-  },
-  rightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 120,
-  },
-  actionButton: {
-    width: 60,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  archiveButton: {
-    backgroundColor: '#FFC247',
-  },
-  deleteButton: {
-    backgroundColor: '#FF3B30', // More intense red color
-  },
-  actionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  emptyStateText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-  emptyStateHint: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-  emptyListContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: '100%', // Ensure it fills the whole screen
-  },
-  loader: {
-    padding: 16,
-  },
-});
