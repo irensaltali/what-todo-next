@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { contentStyles } from '@/lib/styles/content';
+import { useTheme } from '@/lib/styles/useTheme';
 
 const FAQ_ITEMS = [
   {
@@ -41,146 +43,56 @@ const CONTACT_OPTIONS = [
 ];
 
 export default function HelpScreen() {
+  const theme = useTheme();
+  
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={contentStyles.container}>
       <Stack.Screen options={{ title: 'Help Center' }} />
       
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#6C757D" />
-          <Text style={styles.searchPlaceholder}>Search help articles</Text>
+      <View style={contentStyles.searchSection}>
+        <View style={contentStyles.searchBar}>
+          <Ionicons name="search" size={20} color={theme.colors.text.secondary} />
+          <Text style={contentStyles.searchPlaceholder}>Search help articles</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+      <View style={contentStyles.section}>
+        <Text style={contentStyles.sectionTitle}>Frequently Asked Questions</Text>
         {FAQ_ITEMS.map((item, index) => (
           <Pressable
             key={index}
             style={[
-              styles.faqItem,
-              index !== FAQ_ITEMS.length - 1 && styles.borderBottom,
+              contentStyles.faqItem,
+              index !== FAQ_ITEMS.length - 1 && contentStyles.borderBottom,
             ]}
           >
-            <Text style={styles.question}>{item.question}</Text>
-            <Text style={styles.answer}>{item.answer}</Text>
+            <Text style={contentStyles.question}>{item.question}</Text>
+            <Text style={contentStyles.answer}>{item.answer}</Text>
           </Pressable>
         ))}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Contact Support</Text>
+      <View style={contentStyles.section}>
+        <Text style={contentStyles.sectionTitle}>Contact Support</Text>
         {CONTACT_OPTIONS.map((option, index) => (
           <Pressable
             key={index}
             style={[
-              styles.contactOption,
-              index !== CONTACT_OPTIONS.length - 1 && styles.borderBottom,
+              contentStyles.contactOption,
+              index !== CONTACT_OPTIONS.length - 1 && contentStyles.borderBottom,
             ]}
           >
-            <View style={styles.contactIcon}>
-              <Ionicons name={option.icon as any} size={24} color="#FF6B00" />
+            <View style={contentStyles.contactIcon}>
+              <Ionicons name={option.icon as any} size={24} color={theme.colors.secondary} />
             </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactTitle}>{option.title}</Text>
-              <Text style={styles.contactDescription}>{option.description}</Text>
+            <View style={contentStyles.contactInfo}>
+              <Text style={contentStyles.contactTitle}>{option.title}</Text>
+              <Text style={contentStyles.contactDescription}>{option.description}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#6C757D" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.text.secondary} />
           </Pressable>
         ))}
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  searchSection: {
-    padding: 16,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchPlaceholder: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#6C757D',
-  },
-  section: {
-    backgroundColor: '#fff',
-    marginTop: 24,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  faqItem: {
-    padding: 16,
-  },
-  borderBottom: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  question: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 8,
-  },
-  answer: {
-    fontSize: 14,
-    color: '#6C757D',
-    lineHeight: 20,
-  },
-  contactOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  contactIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF3E0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  contactInfo: {
-    flex: 1,
-  },
-  contactTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 4,
-  },
-  contactDescription: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-});
