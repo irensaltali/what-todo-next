@@ -87,7 +87,7 @@ export default function ProfileScreen() {
         .from('tasks')
         .select('id', { count: 'exact' })
         .eq('user_id', user.id)
-        .eq('status', 'inprocess');
+        .eq('status', 'inprogress');
 
       const { data: completedTasks, error: completedError } = await supabase
         .from('tasks')
