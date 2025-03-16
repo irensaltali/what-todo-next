@@ -12,6 +12,7 @@ export * from './featured-task-card';
 export * from './focus-task-view';
 export * from './image-editor';
 export * from './status-bar';
+export * from './task-entry-bottom-sheet';
 
 // Utility function to create dynamic styles based on theme
 export const createStyles = (stylesFn: (theme: ReturnType<typeof import('./useTheme').useTheme>) => any) => {

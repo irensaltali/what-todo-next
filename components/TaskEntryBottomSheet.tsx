@@ -27,6 +27,7 @@ import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor'
 import { usePostHog } from 'posthog-react-native';
 import logger, { EventName } from '../lib/logger';
 import * as Sentry from '@sentry/react-native';
+import { taskEntryStyles, taskEntryColors } from '../lib/styles/task-entry-bottom-sheet';
 
 const { height } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
@@ -654,28 +655,28 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
           animationType="slide"
           onRequestClose={handleIOSDateCancel}
         >
-          <View style={styles.datePickerBackdrop}>
+          <View style={taskEntryStyles.datePickerBackdrop}>
             <TouchableOpacity
               style={{flex: 1}}
               activeOpacity={1}
               onPress={handleIOSDateCancel}
             />
-            <View style={styles.iosDatePickerWrapper}>
-              <View style={styles.iosDatePickerContainer}>
-                <View style={styles.iosDatePickerHeader}>
+            <View style={taskEntryStyles.iosDatePickerWrapper}>
+              <View style={taskEntryStyles.iosDatePickerContainer}>
+                <View style={taskEntryStyles.iosDatePickerHeader}>
                   <TouchableOpacity onPress={handleIOSDateCancel}>
-                    <Text style={styles.datePickerCancel}>Cancel</Text>
+                    <Text style={taskEntryStyles.datePickerCancel}>Cancel</Text>
                   </TouchableOpacity>
-                  <Text style={styles.datePickerTitle}>Select Date</Text>
+                  <Text style={taskEntryStyles.datePickerTitle}>Select Date</Text>
                   <TouchableOpacity onPress={handleIOSDateConfirm}>
-                    <Text style={styles.datePickerDone}>Done</Text>
+                    <Text style={taskEntryStyles.datePickerDone}>Done</Text>
                   </TouchableOpacity>
                 </View>
                 <DateTimePicker
                   value={tempDate || date || new Date()}
                   mode={datePickerMode}
                   onChange={handleIOSDateChange}
-                  style={styles.iosDatePicker}
+                  style={taskEntryStyles.iosDatePicker}
                   display="spinner"
                   themeVariant="light"
                   textColor="#000000"
@@ -709,11 +710,11 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
       onRequestClose={handleClose} // This prevents hardware back button from closing directly
       statusBarTranslucent={true}
     >
-      <SafeAreaView style={styles.modalContainer}>
+      <SafeAreaView style={taskEntryStyles.modalContainer}>
         {/* Backdrop with margin effect */}
         <Animated.View 
           style={[
-            styles.backdropOuter,
+            taskEntryStyles.backdropOuter,
             { opacity }
           ]}
         />
@@ -721,79 +722,79 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
         {/* Inner content wrapper with margin */}
         <Animated.View
           style={[
-            styles.contentWrapper,
+            taskEntryStyles.contentWrapper,
             {
               transform: [{ scale }],
             }
           ]}
         >
           {/* This is a placeholder view for the background content */}
-          <View style={styles.contentPlaceholder} />
+          <View style={taskEntryStyles.contentPlaceholder} />
         </Animated.View>
         
         {/* Sheet container - now positioned higher */}
-        <GestureHandlerRootView style={styles.gestureContainer}>
+        <GestureHandlerRootView style={taskEntryStyles.gestureContainer}>
           <GestureDetector gesture={panGesture}>
             <Animated.View 
               style={[
-                styles.bottomSheet,
+                taskEntryStyles.bottomSheet,
                 { 
                   transform: [{ translateY }],
                   maxHeight: SHEET_MAX_HEIGHT,
                 }
               ]}
             >
-              <View style={styles.handle} />
+              <View style={taskEntryStyles.handle} />
               
               {/* Add backdrop for closing any open menu when tapping outside */}
               {(showAdvancedOptions || showReminderOptions) && (
                 <TouchableOpacity
-                  style={styles.menuBackdrop}
+                  style={taskEntryStyles.menuBackdrop}
                   activeOpacity={1}
                   onPress={handleBackdropPress}
                 />
               )}
               
               <KeyboardAvoidingView
-                style={styles.content}
+                style={taskEntryStyles.content}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
               >
-                <View style={styles.headerBar}>
+                <View style={taskEntryStyles.headerBar}>
                   <TouchableOpacity 
-                    style={styles.headerButton}
+                    style={taskEntryStyles.headerButton}
                     onPress={handleClose}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={taskEntryStyles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    style={styles.headerButton}
+                    style={taskEntryStyles.headerButton}
                     onPress={handleSubmit}
                     disabled={submitting}
                   >
-                    <Text style={submitting ? styles.disabledButtonText : styles.addButtonText}>
+                    <Text style={submitting ? taskEntryStyles.disabledButtonText : taskEntryStyles.addButtonText}>
                       {submitting ? 'Adding...' : 'Add'}
                     </Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.combinedInputContainer}>
-                  <View style={styles.titleContainer}>
+                <View style={taskEntryStyles.combinedInputContainer}>
+                  <View style={taskEntryStyles.titleContainer}>
                     <TextInput
                       ref={titleInputRef}
-                      style={styles.titleInput}
+                      style={taskEntryStyles.titleInput}
                       placeholder="Task title"
                       value={title}
                       onChangeText={handleTitleChange}
                       returnKeyType="next"
-                      placeholderTextColor="rgba(142, 142, 147, 0.6)"
-                      selectionColor="#FF9F1C"
+                      placeholderTextColor={taskEntryColors.placeholder}
+                      selectionColor={taskEntryColors.primary}
                     />
                   </View>
                 </View>
                 
-                <View style={styles.richEditorContainer}>
+                <View style={taskEntryStyles.richEditorContainer}>
                   {useRichEditor ? (
                     <>
                       <RichToolbar
@@ -809,11 +810,11 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                           actions.insertBulletsList,
                           actions.insertOrderedList
                         ]}
-                        style={styles.richToolbar}
+                        style={taskEntryStyles.richToolbar}
                         iconSize={18}
                         iconContainerStyle={{ paddingHorizontal: 6 }}
                       />
-                      <View style={styles.editorErrorWrapper}>
+                      <View style={taskEntryStyles.editorErrorWrapper}>
                         <RichEditor
                           ref={richEditorRef}
                           placeholder="Add notes or description..."
@@ -850,16 +851,16 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                             backgroundColor: 'transparent',
                             contentCSSText: 'font-size: 14px; padding: 10px 12px; min-height: 110px; color: #2C2C2C; font-family: -apple-system, BlinkMacSystemFont, sans-serif;'
                           }}
-                          containerStyle={styles.richEditorContent}
+                          containerStyle={taskEntryStyles.richEditorContent}
                           useContainer={true}
                         />
                       </View>
-                      <View style={styles.editorSwitchWrapper}>
+                      <View style={taskEntryStyles.editorSwitchWrapper}>
                         <TouchableOpacity 
-                          style={styles.editorSwitchButton}
+                          style={taskEntryStyles.editorSwitchButton}
                           onPress={() => setUseRichEditor(false)}
                         >
-                          <Text style={styles.editorSwitchText}>
+                          <Text style={taskEntryStyles.editorSwitchText}>
                             Switch to plain text editor
                           </Text>
                         </TouchableOpacity>
@@ -867,10 +868,10 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                     </>
                   ) : (
                     // Plain text fallback editor
-                    <View style={styles.plainEditorContainer}>
+                    <View style={taskEntryStyles.plainEditorContainer}>
                       <TextInput
                         ref={plainTextEditorRef}
-                        style={styles.plainTextEditor}
+                        style={taskEntryStyles.plainTextEditor}
                         placeholder="Add notes or description..."
                         value={description}
                         onChangeText={(text) => {
@@ -878,23 +879,23 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                           setHasChanges(true);
                         }}
                         multiline
-                        placeholderTextColor="rgba(142, 142, 147, 0.6)"
-                        selectionColor="#FF9F1C"
+                        placeholderTextColor={taskEntryColors.placeholder}
+                        selectionColor={taskEntryColors.primary}
                       />
                       {editorError && (
-                        <Text style={styles.editorErrorText}>
+                        <Text style={taskEntryStyles.editorErrorText}>
                           Rich editor unavailable. Using plain text mode.
                         </Text>
                       )}
-                      <View style={styles.editorSwitchWrapper}>
+                      <View style={taskEntryStyles.editorSwitchWrapper}>
                         <TouchableOpacity 
-                          style={styles.editorSwitchButton}
+                          style={taskEntryStyles.editorSwitchButton}
                           onPress={() => {
                             setEditorError(null);
                             setUseRichEditor(true);
                           }}
                         >
-                          <Text style={styles.editorSwitchText}>
+                          <Text style={taskEntryStyles.editorSwitchText}>
                             Try rich text editor
                           </Text>
                         </TouchableOpacity>
@@ -903,23 +904,31 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   )}
                 </View>
                 
-                <View style={styles.metadataRow}>
+                <View style={taskEntryStyles.metadataRow}>
                   <TouchableOpacity 
-                    style={styles.metadataButton}
+                    style={taskEntryStyles.metadataButton}
                     onPress={openDatePicker}
                   >
-                    <MaterialIcons name="calendar-today" size={20} color={date ? "#FF9F1C" : "#8E8E93"} />
-                    <Text style={[styles.metadataText, date && styles.metadataActive]}>
+                    <MaterialIcons 
+                      name="calendar-today" 
+                      size={20} 
+                      color={date ? taskEntryColors.calendar.active : taskEntryColors.calendar.inactive} 
+                    />
+                    <Text style={[taskEntryStyles.metadataText, date && taskEntryStyles.metadataActive]}>
                       {formatDisplayDate(date)}
                     </Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
-                    style={styles.metadataButton}
+                    style={taskEntryStyles.metadataButton}
                     onPress={handlePriorityChange}
                   >
-                    <Ionicons name="flag-outline" size={22} color={priority > 0 ? "#FF9F1C" : "#8E8E93"} />
-                    <Text style={[styles.metadataText, priority > 0 && styles.metadataActive]}>
+                    <Ionicons 
+                      name="flag-outline" 
+                      size={22} 
+                      color={priority > 0 ? taskEntryColors.flag.active : taskEntryColors.flag.inactive} 
+                    />
+                    <Text style={[taskEntryStyles.metadataText, priority > 0 && taskEntryStyles.metadataActive]}>
                       {priority > 0 ? `P${priority}` : 'Priority'}
                     </Text>
                   </TouchableOpacity>
@@ -927,7 +936,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   <View>
                     <TouchableOpacity 
                       ref={reminderButtonRef}
-                      style={styles.metadataButton}
+                      style={taskEntryStyles.metadataButton}
                       onPress={() => {
                         if (!date) {
                           Alert.alert('Set a date first', 'Please set a deadline date before adding reminders.');
@@ -940,33 +949,33 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                       <Ionicons 
                         name="alarm-outline" 
                         size={22} 
-                        color={reminders.length > 0 ? "#FF9F1C" : "#8E8E93"} 
+                        color={reminders.length > 0 ? taskEntryColors.reminder.active : taskEntryColors.reminder.inactive} 
                       />
-                      <Text style={[styles.metadataText, reminders.length > 0 && styles.metadataActive]}>
+                      <Text style={[taskEntryStyles.metadataText, reminders.length > 0 && taskEntryStyles.metadataActive]}>
                         {reminders.length > 0 ? `${reminders.length} Reminder${reminders.length > 1 ? 's' : ''}` : 'Reminder'}
                       </Text>
                     </TouchableOpacity>
                     
                     {showReminderOptions && (
                       <View style={[
-                        styles.advancedOptionsMenu,
+                        taskEntryStyles.advancedOptionsMenu,
                         { right: -40, bottom: 60, width: 220 }
                       ]}>
                         {reminderOptions.map((option) => (
                           <TouchableOpacity
                             key={option.value}
-                            style={styles.advancedOption}
+                            style={taskEntryStyles.advancedOption}
                             onPress={() => toggleReminderOption(option.value)}
                           >
                             <Ionicons 
                               name={reminders.includes(option.value) ? "checkmark-circle" : "alarm-outline"} 
                               size={18} 
-                              color={reminders.includes(option.value) ? "#FF9F1C" : "#8E8E93"} 
+                              color={reminders.includes(option.value) ? taskEntryColors.primary : taskEntryColors.text.secondary} 
                             />
                             <Text 
                               style={[
-                                styles.advancedOptionText,
-                                reminders.includes(option.value) && { color: '#FF9F1C', fontWeight: '500' }
+                                taskEntryStyles.advancedOptionText,
+                                reminders.includes(option.value) && { color: taskEntryColors.primary, fontWeight: '500' }
                               ]}
                             >
                               {option.label}
@@ -979,36 +988,36 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
                   
                   <View>
                     <TouchableOpacity 
-                      style={styles.metadataButton}
+                      style={taskEntryStyles.metadataButton}
                       onPress={handleToggleAdvancedOptions}
                     >
-                      <Ionicons name="ellipsis-horizontal" size={22} color="#8E8E93" />
-                      <Text style={styles.metadataText}>More</Text>
+                      <Ionicons name="ellipsis-horizontal" size={22} color={taskEntryColors.text.secondary} />
+                      <Text style={taskEntryStyles.metadataText}>More</Text>
                     </TouchableOpacity>
                     
                     {showAdvancedOptions && (
                       <View style={[
-                        styles.advancedOptionsMenu,
+                        taskEntryStyles.advancedOptionsMenu,
                         { right: 0, bottom: 60 }
                       ]}>
-                        <TouchableOpacity style={styles.advancedOption}>
-                          <Ionicons name="time-outline" size={18} color="#8E8E93" />
-                          <Text style={styles.advancedOptionText}>Set due time</Text>
+                        <TouchableOpacity style={taskEntryStyles.advancedOption}>
+                          <Ionicons name="time-outline" size={18} color={taskEntryColors.text.secondary} />
+                          <Text style={taskEntryStyles.advancedOptionText}>Set due time</Text>
                         </TouchableOpacity>
                         
-                        <TouchableOpacity style={styles.advancedOption}>
-                          <Ionicons name="repeat-outline" size={18} color="#8E8E93" />
-                          <Text style={styles.advancedOptionText}>Make recurring</Text>
+                        <TouchableOpacity style={taskEntryStyles.advancedOption}>
+                          <Ionicons name="repeat-outline" size={18} color={taskEntryColors.text.secondary} />
+                          <Text style={taskEntryStyles.advancedOptionText}>Make recurring</Text>
                         </TouchableOpacity>
                         
-                        <TouchableOpacity style={styles.advancedOption}>
-                          <Ionicons name="list-outline" size={18} color="#8E8E93" />
-                          <Text style={styles.advancedOptionText}>Add subtasks</Text>
+                        <TouchableOpacity style={taskEntryStyles.advancedOption}>
+                          <Ionicons name="list-outline" size={18} color={taskEntryColors.text.secondary} />
+                          <Text style={taskEntryStyles.advancedOptionText}>Add subtasks</Text>
                         </TouchableOpacity>
                         
-                        <TouchableOpacity style={styles.advancedOption}>
-                          <Ionicons name="bookmark-outline" size={18} color="#8E8E93" />
-                          <Text style={styles.advancedOptionText}>Add tags</Text>
+                        <TouchableOpacity style={taskEntryStyles.advancedOption}>
+                          <Ionicons name="bookmark-outline" size={18} color={taskEntryColors.text.secondary} />
+                          <Text style={taskEntryStyles.advancedOptionText}>Add tags</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -1025,341 +1034,3 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-  },
-  backdropOuter: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-  },
-  contentWrapper: {
-    flex: 1,
-    margin: MARGIN,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  contentPlaceholder: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  gestureContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    top: Platform.OS === 'ios' ? StatusBar.currentHeight || 44 : 0, // Leave space for status bar
-  },
-  bottomSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 10,
-    height: '100%',
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#DEDEDE',
-    alignSelf: 'center',
-    marginTop: 8,
-  },
-  content: {
-    padding: 16,
-    flex: 1,
-  },
-  headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  combinedInputContainer: {
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 12,
-    marginBottom: 8,
-    overflow: 'hidden',
-    flex: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  titleInput: {
-    flex: 1,
-    height: 35,
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'left',
-    paddingHorizontal: 0,
-    color: '#2C2C2C',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#EEEEEE',
-    marginHorizontal: 0, // Remove horizontal margin
-  },
-  richEditorContainer: {
-    minHeight: 146,
-    maxHeight: Math.min(250, height * 0.3),
-    marginTop: 0,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
-  },
-  richToolbar: {
-    backgroundColor: '#F8F8F8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    height: 32,
-    paddingHorizontal: 10,
-  },
-  richEditorContent: {
-    flex: 1,
-    minHeight: 110,
-  },
-  metadataRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    marginTop: 0,
-    marginBottom: 16,
-  },
-  metadataButton: {
-    alignItems: 'center',
-    marginHorizontal: 4,
-    position: 'relative',
-  },
-  metadataText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  metadataActive: {
-    color: '#FF9F1C',
-    fontWeight: '500',
-  },
-  cancelButtonText: {
-    color: '#8E8E93',
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  addButtonText: {
-    color: '#FF9F1C',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  disabledButtonText: {
-    color: '#CCCCCC',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  // New hover menu styles
-  advancedOptionsMenu: {
-    position: 'absolute',
-    width: 180,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    paddingVertical: 8,
-    zIndex: 1000,
-  },
-  advancedOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  advancedOptionText: {
-    fontSize: 14,
-    marginLeft: 12,
-  },
-  menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-    zIndex: 100,
-  },
-  reminderOptionsMenu: {
-    position: 'absolute',
-    width: 250,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 1000,
-    maxHeight: 360,
-    overflow: 'hidden',
-  },
-  reminderOptionsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  reminderOptionsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  reminderOptionsList: {
-    maxHeight: 220,
-  },
-  reminderOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
-  },
-  reminderOptionSelected: {
-    backgroundColor: '#FFF8EC',
-  },
-  reminderOptionText: {
-    fontSize: 14,
-    color: '#333',
-    flex: 1,
-    marginRight: 8,
-  },
-  reminderOptionTextSelected: {
-    fontWeight: '500',
-    color: '#FF9F1C',
-  },
-  reminderActionButton: {
-    backgroundColor: '#FF9F1C',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    margin: 16,
-    marginTop: 8,
-  },
-  reminderActionButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  datePickerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    zIndex: 1001,
-  },
-  iosDatePickerWrapper: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  iosDatePickerContainer: {
-    width: '100%',
-    backgroundColor: 'white',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 10,
-  },
-  iosDatePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-    backgroundColor: '#F8F8F8',
-  },
-  datePickerCancel: {
-    color: '#8E8E93',
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  datePickerTitle: {
-    color: '#333',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  datePickerDone: {
-    color: '#FF9F1C',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  iosDatePicker: {
-    backgroundColor: 'white',
-    color: '#000000',
-    height: 220,
-    width: '100%',
-  },
-  editorErrorWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  plainEditorContainer: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: 'white',
-  },
-  plainTextEditor: {
-    flex: 1,
-    height: 150,
-    fontSize: 14,
-    color: '#2C2C2C',
-    textAlignVertical: 'top',
-  },
-  editorErrorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 6,
-  },
-  editorSwitchWrapper: {
-    alignItems: 'center',
-    paddingVertical: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#F2F2F2',
-  },
-  editorSwitchButton: {
-    paddingVertical: 6,
-  },
-  editorSwitchText: {
-    color: '#8E8E93',
-    fontSize: 12,
-  },
-});
