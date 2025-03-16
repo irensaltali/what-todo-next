@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,8 @@ import useLanguageStore from '@/store/languageStore';
 import i18n from '@/i18n/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nManager } from 'react-native';
+import { contentStyles } from '@/lib/styles/content';
+import { useTheme } from '@/lib/styles/useTheme';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', region: 'United States', rtl: false },
@@ -29,6 +31,7 @@ export default function LanguageScreen() {
   const { language, setLanguage } = useLanguageStore();
   const [changingLanguage, setChangingLanguage] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(language);
+  const theme = useTheme();
   
   // Reset UI state when screen is loaded
   useEffect(() => {
@@ -75,135 +78,59 @@ export default function LanguageScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={contentStyles.container}>
       <Stack.Screen 
         options={{ 
           title: t('profile.language_region'),
           headerLeft: () => (
             <Pressable 
               onPress={() => router.back()}
-              style={styles.backButton}
+              style={contentStyles.backButton}
             >
-              <Ionicons name="chevron-back" size={28} color="#007AFF" />
+              <Ionicons name="chevron-back" size={28} color={theme.colors.primary} />
             </Pressable>
           ),
         }} 
       />
       
       {changingLanguage && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#FF9F1C" />
-          <Text style={styles.loadingText}>{t('change_language')}...</Text>
+        <View style={contentStyles.loadingOverlay}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={contentStyles.loadingText}>{t('change_language')}...</Text>
         </View>
       )}
       
-      <View style={styles.section}>
+      <View style={contentStyles.section}>
         {LANGUAGES.map((lang, index) => (
           <Pressable
             key={lang.code}
             style={[
-              styles.languageItem,
-              index !== LANGUAGES.length - 1 && styles.borderBottom,
-              selectedLanguage === lang.code && styles.selectedLanguage
+              contentStyles.languageItem,
+              index !== LANGUAGES.length - 1 && contentStyles.borderBottom,
+              selectedLanguage === lang.code && contentStyles.selectedLanguage
             ]}
             onPress={() => handleLanguageChange(lang.code)}
             disabled={changingLanguage}
           >
-            <View style={styles.languageInfo}>
+            <View style={contentStyles.languageInfo}>
               <Text style={[
-                styles.languageName,
-                selectedLanguage === lang.code && styles.selectedText
+                contentStyles.languageName,
+                selectedLanguage === lang.code && contentStyles.selectedText
               ]}>
                 {lang.name}
               </Text>
-              <Text style={styles.regionName}>{lang.region}</Text>
+              <Text style={contentStyles.regionName}>{lang.region}</Text>
             </View>
             {selectedLanguage === lang.code && (
-              <Ionicons name="checkmark" size={24} color="#34C759" />
+              <Ionicons name="checkmark" size={24} color={theme.colors.text.success} />
             )}
           </Pressable>
         ))}
       </View>
       
-      <Text style={styles.noteText}>
+      <Text style={contentStyles.noteText}>
         Note: The app will apply the language change immediately.
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -4,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#1C1C1E',
-  },
-  section: {
-    backgroundColor: '#fff',
-    marginTop: 16,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  languageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  selectedLanguage: {
-    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-  },
-  selectedText: {
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  borderBottom: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  languageInfo: {
-    flex: 1,
-  },
-  languageName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 4,
-  },
-  regionName: {
-    fontSize: 14,
-    color: '#6C757D',
-  },
-  noteText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 20,
-    marginHorizontal: 16,
-  }
-});

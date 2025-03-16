@@ -30,6 +30,18 @@ export interface ContentStyles {
   contactInfo: ViewStyle;
   contactTitle: TextStyle;
   contactDescription: TextStyle;
+
+  // Language styles
+  backButton: ViewStyle;
+  loadingOverlay: ViewStyle;
+  loadingText: TextStyle;
+  languageItem: ViewStyle;
+  selectedLanguage: ViewStyle;
+  selectedText: TextStyle;
+  languageInfo: ViewStyle;
+  languageName: TextStyle;
+  regionName: TextStyle;
+  noteText: TextStyle;
 }
 
 // Create content styles
@@ -128,5 +140,60 @@ export const contentStyles = StyleSheet.create<ContentStyles>({
   contactDescription: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
+  },
+
+  // Language styles
+  backButton: {
+    padding: theme.spacing.xs,
+    marginLeft: -4,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  loadingText: {
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.primary,
+  },
+  languageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.lg,
+  },
+  selectedLanguage: {
+    backgroundColor: 'rgba(52, 199, 89, 0.1)', // Success color with opacity
+  },
+  selectedText: {
+    fontWeight: theme.typography.fontWeight.bold as any,
+    color: '#007AFF', // iOS blue color - might want to add to theme
+  },
+  languageInfo: {
+    flex: 1,
+  },
+  languageName: {
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold as any,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  regionName: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+  },
+  noteText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.placeholder,
+    textAlign: 'center',
+    marginTop: theme.spacing.xl,
+    marginHorizontal: theme.spacing.lg,
   },
 }); 
