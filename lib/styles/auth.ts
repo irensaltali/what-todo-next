@@ -19,6 +19,11 @@ interface AuthStyles {
   buttonText: TextStyle;
   footer: TextStyle;
   footerLink: TextStyle;
+  checkboxContainer: ViewStyle;
+  checkbox: ViewStyle;
+  checkboxChecked: ViewStyle;
+  checkboxLabel: TextStyle;
+  link: TextStyle;
 }
 
 // Create auth styles
@@ -98,6 +103,33 @@ export const authStyles = StyleSheet.create<AuthStyles>({
     color: theme.colors.text.secondary,
   },
   footerLink: {
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.text.placeholder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+  },
+  link: {
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
