@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isAfter, startOfDay } from 'date-fns';
+import { useTheme, spacing, typography, borderRadius } from '../lib/styles';
 
 interface DatePickerProps {
   date: Date;
@@ -20,6 +21,7 @@ interface DatePickerProps {
 export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
   const today = startOfDay(new Date());
+  const { colors, shadows, isDarkMode } = useTheme();
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -57,18 +59,27 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
   return (
     <View>
       <Pressable
-        style={[styles.container, error && styles.containerError]}
+        style={[
+          styles.container, 
+          { 
+            backgroundColor: colors.background.card,
+            ...shadows.medium
+          },
+          error && { borderWidth: 1, borderColor: colors.text.error }
+        ]}
         onPress={openPicker}
       >
-        <Ionicons name="calendar-outline" size={20} color="#8E8E93" />
-        <Text style={styles.dateText}>
+        <Ionicons name="calendar-outline" size={20} color={colors.icon.secondary} />
+        <Text style={[styles.dateText, { color: colors.text.primary }]}>
           {format(date, 'MMMM d, yyyy')}
         </Text>
-        <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+        <Ionicons name="chevron-down" size={20} color={colors.icon.secondary} />
       </Pressable>
 
       {error && (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.text.error }]}>
+          {error}
+        </Text>
       )}
 
       {(Platform.OS === 'ios' || Platform.OS === 'android') && showPicker && (
@@ -79,17 +90,25 @@ export function DatePicker({ date, onDateChange, error }: DatePickerProps) {
           onRequestClose={() => setShowPicker(false)}
         >
           <Pressable
-            style={styles.modalOverlay}
+            style={[styles.modalOverlay, { backgroundColor: colors.background.modal }]}
             onPress={() => setShowPicker(false)}
           >
-            <View style={styles.modalContent}>
+            <View style={[
+              styles.modalContent, 
+              { 
+                backgroundColor: colors.background.card,
+                ...shadows.medium 
+              }
+            ]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Date</Text>
+                <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+                  Select Date
+                </Text>
                 <Pressable
                   style={styles.modalCloseButton}
                   onPress={() => setShowPicker(false)}
                 >
-                  <Ionicons name="close" size={24} color="#1C1C1E" />
+                  <Ionicons name="close" size={24} color={colors.icon.primary} />
                 </Pressable>
               </View>
               <DateTimePicker
@@ -112,41 +131,27 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  containerError: {
-    borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   dateText: {
     flex: 1,
-    fontSize: 16,
-    color: '#1C1C1E',
+    fontSize: typography.fontSize.md,
   },
   errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginTop: 4,
-    marginLeft: 4,
+    fontSize: typography.fontSize.xs,
+    marginTop: spacing.xs,
+    marginLeft: spacing.xs,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
     width: '90%',
     maxWidth: 400,
   },
@@ -154,15 +159,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
+    fontSize: typography.fontSize.lg,
+    fontWeight: '700',
   },
   modalCloseButton: {
-    padding: 4,
+    padding: spacing.xs,
   },
   picker: {
     height: 300,
