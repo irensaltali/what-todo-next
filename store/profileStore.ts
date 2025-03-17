@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Profile } from '../store/models/profile';
-import { supabase } from '../data/supabase';
+import { Profile } from '@/store/models/profile';
+import { supabase } from '@/data/supabase';
+import { debug } from '@/lib/logger';
 
 /**
  * Generates a random monster image from the assets
@@ -10,15 +11,27 @@ import { supabase } from '../data/supabase';
  * @returns Path to a random monster image
  */
 export const getRandomMonsterImage = (userId?: string | null): number => {
+    let monsterNumber: number;
+    
     if (userId) {
         // Generate deterministic monster number based on user ID
         // This ensures the same user always gets the same monster
         const hash = Array.from(userId).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        return (hash % 50) + 1; // Between 1 and 50
+        monsterNumber = (hash % 50) + 1; // Between 1 and 50
+        debug('Generating deterministic monster avatar', { 
+            userId, 
+            hash, 
+            monsterNumber 
+        });
+    } else {
+        // Random monster if no user ID provided
+        monsterNumber = Math.floor(Math.random() * 50) + 1;
+        debug('Generating random monster avatar', { 
+            monsterNumber 
+        });
     }
     
-    // Random monster if no user ID provided
-    return Math.floor(Math.random() * 50) + 1;
+    return monsterNumber;
 };
 
 /**
@@ -60,6 +73,7 @@ const useProfileStore = create<ProfileState>()(
 
         // Actions
         setProfile: (profile: Profile) => {
+            debug('Setting profile', { profileId: profile.id, name: profile.name });
             // When setting the profile, cache the avatar URL
             set({ 
                 profile,
@@ -69,6 +83,11 @@ const useProfileStore = create<ProfileState>()(
 
         updateProfile: (data: Partial<Profile>) => {
             const currentState = get();
+            debug('Updating profile', { 
+                profileId: currentState.profile.id,
+                updates: data 
+            });
+            
             const updatedProfile = {
                 ...currentState.profile,
                 ...data,
@@ -86,7 +105,8 @@ const useProfileStore = create<ProfileState>()(
             });
         },
 
-        clearProfile: () =>
+        clearProfile: () => {
+            debug('Clearing profile');
             set({
                 profile: {
                     id: null,
@@ -96,10 +116,12 @@ const useProfileStore = create<ProfileState>()(
                     updated_at: null,
                 },
                 cachedAvatarUrl: null
-            }),
+            });
+        },
 
         loadProfile: async (userId: string) => {
             try {
+                debug('Loading profile', { userId });
                 set({ loading: true, error: null });
                 
                 const { data, error } = await supabase
@@ -114,6 +136,11 @@ const useProfileStore = create<ProfileState>()(
                 
                 if (data) {
                     const profileData = data as Profile;
+                    debug('Profile loaded successfully', { 
+                        profileId: profileData.id,
+                        name: profileData.name 
+                    });
+                    
                     // Check if avatar has changed before updating cache
                     const currentCachedAvatar = get().cachedAvatarUrl;
                     const newAvatarUrl = profileData.avatar_url;
@@ -125,35 +152,72 @@ const useProfileStore = create<ProfileState>()(
                     });
                 }
             } catch (error) {
-                set({ error: error instanceof Error ? error.message : 'Failed to load profile' });
+                const errorMessage = error instanceof Error ? error.message : 'Failed to load profile';
+                debug('Error loading profile', { userId, error: errorMessage });
+                set({ error: errorMessage });
                 console.error('Error loading profile:', error);
             } finally {
                 set({ loading: false });
             }
         },
 
-        setLoading: (loading: boolean) => set({ loading }),
+        setLoading: (loading: boolean) => {
+            debug('Setting loading state', { loading });
+            set({ loading });
+        },
 
-        setError: (error: string | null) => set({ error }),
+        setError: (error: string | null) => {
+            debug('Setting error state', { error });
+            set({ error });
+        },
         
         // Get a random monster image as default avatar
-        getDefaultAvatar: () => getRandomMonsterImage(get().profile.id),
+        getDefaultAvatar: () => {
+            const currentProfileId = get().profile.id;
+            const avatarNumber = getRandomMonsterImage(currentProfileId);
+            debug('Getting default avatar', { 
+                profileId: currentProfileId,
+                avatarNumber,
+                timestamp: new Date().toISOString()
+            });
+            return avatarNumber;
+        },
         
         // Get avatar with local caching
         getAvatarUrl: () => {
             const { profile, cachedAvatarUrl } = get();
             
+            debug('Getting avatar URL', { 
+                profileId: profile.id,
+                hasCachedAvatar: !!cachedAvatarUrl,
+                hasProfileAvatar: !!profile.avatar_url,
+                cachedAvatarUrl,
+                profileAvatarUrl: profile.avatar_url,
+                timestamp: new Date().toISOString()
+            });
+            
             // Return cached avatar if available
             if (cachedAvatarUrl) {
+                debug('Using cached avatar URL', { 
+                    profileId: profile.id,
+                    cachedAvatarUrl 
+                });
                 return cachedAvatarUrl;
             }
             
             // If no cached avatar but profile has one, cache and return it
             if (profile.avatar_url) {
+                debug('Caching profile avatar URL', { 
+                    profileId: profile.id,
+                    newCachedUrl: profile.avatar_url 
+                });
                 set({ cachedAvatarUrl: profile.avatar_url });
                 return profile.avatar_url;
             }
             
+            debug('No avatar URL available, will use default monster', { 
+                profileId: profile.id 
+            });
             // Default fallback - will generate a random monster
             return null;
         }

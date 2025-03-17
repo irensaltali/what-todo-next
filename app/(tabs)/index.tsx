@@ -4,6 +4,7 @@ import {
   Text,
   Image,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -18,7 +19,7 @@ import Animated, {
 import { supabase } from '@/data/supabase';
 import FeaturedTaskCard from '@/components/FeaturedTaskCard';
 import useProfileStore from '@/store/profileStore';
-import { Profile } from '@/store/models/profile';
+import { useTaskStore, Task } from '@/store/taskStore';
 import { useTranslation } from 'react-i18next';
 import { homeStyles, homeResponsive, STATUS_COLORS, STATUS_ICON_COLORS } from '@/lib/styles/home';
 import { useTheme } from '@/lib/styles/useTheme';
@@ -26,11 +27,17 @@ import { useTheme } from '@/lib/styles/useTheme';
 // Get responsive variables from the centralized home styles
 const { sizing, statusSectionHeight } = homeResponsive;
 
-const STATUS_COUNTS = {
-  ongoing: 24,
-  inprogress: 12,
-  canceled: 8,
-  completed: 42,
+// Calculate status counts from tasks
+const calculateStatusCounts = (tasks: Task[]) => {
+  const completed = tasks.filter(task => task.status === 'completed').length;
+  const ongoing = tasks.filter(task => task.status === 'ongoing').length;
+  
+  return {
+    ongoing,
+    inprogress: 0,
+    canceled: 0,
+    completed,
+  };
 };
 
 const featuredTaskData = {
@@ -56,7 +63,7 @@ const monsterImages: Record<number, any> = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { tasks, isLoading: todosLoading, error: todosError, fetchTasks } = useTaskStore();
   const { profile, loading: profileLoading, error: profileError, loadProfile, getDefaultAvatar } = useProfileStore();
   const [statusSectionCollapsed, setStatusSectionCollapsed] = useState(false);
   const { t } = useTranslation();
@@ -74,36 +81,14 @@ export default function HomeScreen() {
 
   const initializeProfile = async () => {
     try {
-      // Check if we already have a profile in the store
       if (!profile.id) {
-        // Get the current authenticated user
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Load profile from Supabase using the store's loadProfile function
           await loadProfile(user.id);
         }
       }
     } catch (error) {
       console.error('Error initializing profile:', error);
-    }
-  };
-
-  const fetchTasks = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
     }
   };
 
@@ -126,11 +111,9 @@ export default function HomeScreen() {
     setStatusSectionCollapsed(newCollapsedState);
 
     if (newCollapsedState) {
-      // Collapse
       collapsibleHeight.value = withTiming(0, { duration: 300 });
       summaryOpacity.value = withTiming(1, { duration: 300 });
     } else {
-      // Expand
       collapsibleHeight.value = withTiming(statusSectionHeight, { duration: 300 });
       summaryOpacity.value = withTiming(0, { duration: 300 });
     }
@@ -139,32 +122,21 @@ export default function HomeScreen() {
   // Scroll handler to track position and velocity
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      // Calculate velocity (change in position)
       const currentY = event.contentOffset.y;
       scrollVelocity.value = currentY - lastScrollY.value;
       lastScrollY.value = currentY;
-
-      // Store current scroll position
       scrollY.value = currentY;
-
-      // During active scrolling, we just track position but don't collapse yet
     },
     onEndDrag: (event) => {
-      // When user lifts finger, decide whether to collapse based on position and velocity
       const currentY = event.contentOffset.y;
       const velocity = Math.abs(scrollVelocity.value);
-
-      // Calculate animation duration based on velocity (faster scroll = faster animation)
-      // Clamp between 150ms and 500ms for reasonable animation speed
       const animDuration = Math.max(150, Math.min(500, 300 / (velocity * 0.1 + 1)));
 
       if (currentY > statusSectionHeight * 0.3 || (scrollVelocity.value > 5 && currentY > statusSectionHeight * 0.1)) {
-        // Collapse if scrolled past threshold OR scrolling up quickly
         collapsibleHeight.value = withTiming(0, { duration: animDuration });
         summaryOpacity.value = withTiming(1, { duration: animDuration });
         runOnJS(setStatusSectionCollapsed)(true);
       } else if (currentY < statusSectionHeight * 0.1 || (scrollVelocity.value < -5 && currentY < statusSectionHeight * 0.5)) {
-        // Expand if near top OR scrolling down quickly
         collapsibleHeight.value = withTiming(statusSectionHeight, { duration: animDuration });
         summaryOpacity.value = withTiming(0, { duration: animDuration });
         runOnJS(setStatusSectionCollapsed)(false);
@@ -173,19 +145,15 @@ export default function HomeScreen() {
   });
 
   // Animated styles
-  const statusSectionStyle = useAnimatedStyle(() => {
-    return {
-      height: collapsibleHeight.value,
-      opacity: collapsibleHeight.value / statusSectionHeight,
-      overflow: 'hidden',
-    };
-  });
+  const statusSectionStyle = useAnimatedStyle(() => ({
+    height: collapsibleHeight.value,
+    opacity: collapsibleHeight.value / statusSectionHeight,
+    overflow: 'hidden',
+  }));
 
-  const statusSummaryStyle = useAnimatedStyle(() => {
-    return {
-      opacity: summaryOpacity.value
-    };
-  });
+  const statusSummaryStyle = useAnimatedStyle(() => ({
+    opacity: summaryOpacity.value
+  }));
 
   const StatusCard = ({ status, count, color, iconColor }: { status: string; count: number; color: string; iconColor: string }) => (
     <View style={[homeStyles.statusCard, { backgroundColor: color }]}>
@@ -219,12 +187,22 @@ export default function HomeScreen() {
       onPress={() => handleTaskPress(task.id)}
     >
       <View style={homeStyles.taskInfo}>
-        <Text style={homeStyles.taskTitle}>{task.title}</Text>
-        <Text style={homeStyles.taskType}>{task.type}</Text>
-        <Text style={homeStyles.taskCount}>{task.task_count} {t('home.tasks')}</Text>
+        <Text style={[homeStyles.taskTitle, task.status === 'completed' && { textDecorationLine: 'line-through' }]}>
+          {task.title}
+        </Text>
+        <Text style={homeStyles.taskType}>
+          {new Date(task.created_at).toLocaleDateString()}
+        </Text>
       </View>
+      {todosLoading && (
+        <View style={homeStyles.loadingIndicator}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+      )}
     </Pressable>
   );
+
+  const statusCounts = calculateStatusCounts(tasks);
 
   return (
     <View style={homeStyles.container}>
@@ -263,7 +241,7 @@ export default function HomeScreen() {
 
           <View style={homeStyles.headerRightContainer}>
             <Animated.View style={[homeStyles.statusSummary, statusSummaryStyle]}>
-              {Object.entries(STATUS_COUNTS).map(([status, count]) => (
+              {Object.entries(statusCounts).map(([status, count]) => (
                 <View key={status} style={homeStyles.statusBadge}>
                   <View
                     style={[
@@ -297,7 +275,7 @@ export default function HomeScreen() {
           {/* Status section cards */}
           <Animated.View style={[homeStyles.collapsibleContent, statusSectionStyle]}>
             <View style={homeStyles.statusGrid}>
-              {Object.entries(STATUS_COUNTS).map(([status, count]) => (
+              {Object.entries(statusCounts).map(([status, count]) => (
                 <StatusCard
                   key={status}
                   status={status}
@@ -312,23 +290,23 @@ export default function HomeScreen() {
 
         <View style={homeStyles.tasksSection}>
           <Text style={homeStyles.sectionTitle}>{t('home.upcoming')}</Text>
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
-          {tasks.length === 0 && (
+          {todosError ? (
+            <Text style={[homeStyles.emptyStateText, { color: theme.colors.text.error }]}>
+              {todosError}
+            </Text>
+          ) : todosLoading ? (
+            <View style={homeStyles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : tasks.length === 0 ? (
             <Text style={homeStyles.emptyStateText}>{t('home.empty_tasks')}</Text>
+          ) : (
+            tasks.map((task) => (
+              <TaskCard key={task.id} task={task} />
+            ))
           )}
         </View>
       </Animated.ScrollView>
     </View>
   );
-}
-
-interface Task {
-  id: string;
-  title: string;
-  type: string;
-  task_count: number;
-  progress: number;
-  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
 }
