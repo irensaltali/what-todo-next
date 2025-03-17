@@ -66,7 +66,7 @@ export default function ProfileScreen() {
       // Check if we already have a profile in the store
       if (!profile.id) {
         // Get the current authenticated user
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await useProfileStore.getState().getCurrentUser();
         if (user) {
           // Load profile from Supabase using the store's loadProfile function
           await loadProfile(user.id);
@@ -82,7 +82,7 @@ export default function ProfileScreen() {
     if (taskCounts.inProcess > 0 || taskCounts.completed > 0) return;
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await useProfileStore.getState().getCurrentUser();
       if (!user) return;
 
       const { data: inProcessTasks, error: inProcessError } = await supabase

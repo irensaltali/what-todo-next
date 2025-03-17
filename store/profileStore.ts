@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Profile } from '@/store/models/profile';
 import { supabase } from '@/data/supabase';
 import { debug } from '@/lib/logger';
+import { User } from '@supabase/supabase-js';
 
 /**
  * Generates a random monster image from the assets
@@ -50,6 +51,7 @@ interface ProfileState {
     setError: (error: string | null) => void;
     getDefaultAvatar: () => number;
     getAvatarUrl: () => string | null; // New method to get avatar with caching
+    getCurrentUser: () => Promise<User | null>; // Updated return type to match Supabase User type
 }
 
 /**
@@ -220,6 +222,18 @@ const useProfileStore = create<ProfileState>()(
             });
             // Default fallback - will generate a random monster
             return null;
+        },
+
+        // Get current user
+        getCurrentUser: async () => {
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) throw error;
+                return user;
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                return null;
+            }
         }
     }),
         {

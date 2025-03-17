@@ -10,6 +10,7 @@ import { calculatePriorityScore } from '@/lib/utils/priority';
 import { useTaskEntry } from '@/contexts/TaskEntryContext';
 import { getUserTasks, updateTask, hardDeleteTask } from '@/data/taskService';
 import type { Task as ServiceTask } from '@/data/taskService';
+import useProfileStore from '@/store/profileStore';
 
 interface EditableFields {
   title: boolean;
@@ -80,7 +81,7 @@ export default function TaskDetailsScreen() {
       setError(null);
 
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await useProfileStore.getState().getCurrentUser();
       if (!user) throw new Error('No user found');
 
       // Use the taskService function to get the task

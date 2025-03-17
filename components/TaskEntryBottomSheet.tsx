@@ -28,6 +28,7 @@ import { usePostHog } from 'posthog-react-native';
 import logger, { EventName } from '../lib/logger';
 import * as Sentry from '@sentry/react-native';
 import { taskEntryStyles, taskEntryColors } from '../lib/styles/task-entry-bottom-sheet';
+import useProfileStore from '../store/profileStore';
 
 const { height } = Dimensions.get('window');
 const MARGIN = 16; // Margin for the backdrop effect
@@ -343,7 +344,7 @@ export const TaskEntryBottomSheet: React.FC<TaskEntryBottomSheetProps> = ({
 
     try {
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await useProfileStore.getState().getCurrentUser();
       if (!user) {
         Alert.alert('Error', 'You must be logged in to create a task');
         setSubmitting(false);

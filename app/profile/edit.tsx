@@ -17,6 +17,7 @@ import { getAvatarUrl } from '@/lib/avatarUrl';
 import { ImageEditor } from '@/components/ImageEditor';
 import { uploadAvatar } from '@/lib/avatar';
 import { StatusBar } from '@/components/StatusBar';
+import useProfileStore from '@/store/profileStore';
 
 interface Profile {
   id: string;
@@ -38,7 +39,7 @@ export default function EditProfileScreen() {
 
   const fetchProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await useProfileStore.getState().getCurrentUser();
       if (!user) return;
 
       setUserEmail(user.email || null);
@@ -87,7 +88,7 @@ export default function EditProfileScreen() {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await useProfileStore.getState().getCurrentUser();
       if (!user) throw new Error('No user found');
 
       // Upload avatar and get public URL

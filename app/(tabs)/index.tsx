@@ -82,7 +82,7 @@ export default function HomeScreen() {
   const initializeProfile = async () => {
     try {
       if (!profile.id) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await useProfileStore.getState().getCurrentUser();
         if (user) {
           await loadProfile(user.id);
         }
