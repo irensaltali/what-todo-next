@@ -104,6 +104,10 @@ export interface HomeStyles {
   taskType: TextStyle;
   taskCount: TextStyle;
   emptyStateText: TextStyle;
+
+  // Loading states
+  loadingIndicator: ViewStyle;
+  loadingContainer: ViewStyle;
 }
 
 // Export responsive variables for use in components
@@ -294,5 +298,19 @@ export const homeStyles = StyleSheet.create<HomeStyles>({
     color: theme.colors.text.placeholder,
     textAlign: 'center',
     marginTop: spacing.lg,
+  },
+
+  loadingIndicator: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -10 }],
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
 }); 
