@@ -1,98 +1,58 @@
-import React,{ useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '@/data/supabase';
 import { format, isAfter, startOfDay } from 'date-fns';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { DatePicker } from '@/components/DatePicker';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  type: string;
-  task_count: number;
-  progress: number;
-  status: 'ongoing' | 'inprogress' | 'canceled' | 'completed';
-  start_time: string;
-  tags: string[];
-  alert_enabled: boolean;
-}
+import { useTaskStore, Task, TaskStatus } from '@/store/taskStore';
 
 interface EditableFields {
   title: boolean;
   description: boolean;
-  type: boolean;
-  tags: boolean;
-  progress: boolean;
-  start_time: boolean;
+  deadline: boolean;
+  priority: boolean;
+  outcome_value: boolean;
+  difficulty: boolean;
 }
 
 const STATUS_COLORS = {
   ongoing: '#007AFF',
   inprogress: '#FF9F1C',
-  canceled: '#FF3B30',
+  cancelled: '#FF3B30',
   completed: '#34C759',
 };
 
 const STATUS_LABELS = {
   ongoing: 'Ongoing',
   inprogress: 'In Process',
-  canceled: 'Canceled',
+  cancelled: 'Cancelled',
   completed: 'Completed',
 };
 
-const STATUSES = Object.keys(STATUS_LABELS) as Task['status'][];
+const STATUSES = Object.keys(STATUS_LABELS) as TaskStatus[];
 
 export default function TaskDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
-  const [task, setTask] = useState<Task | null>(null);
+  const { tasks, isLoading, error, fetchTasks, updateTask } = useTaskStore();
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
   const [editableFields, setEditableFields] = useState<EditableFields>({
     title: false,
     description: false,
-    type: false,
-    tags: false,
-    progress: false,
-    start_time: false,
+    deadline: false,
+    priority: false,
+    outcome_value: false,
+    difficulty: false,
   });
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const task = tasks.find(t => t.id === id);
 
   useEffect(() => {
-    fetchTask();
+    fetchTasks();
   }, [id]);
-
-  const fetchTask = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user found');
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      if (!data) throw new Error('Task not found');
-
-      setTask(data);
-      setEditedTask(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const validateField = (field: keyof Task, value: any): string | null => {
     switch (field) {
@@ -103,13 +63,14 @@ export default function TaskDetailsScreen() {
       case 'description':
         if (value?.length > 500) return 'Description must be less than 500 characters';
         break;
-      case 'progress':
-        const progress = Number(value);
-        if (isNaN(progress) || progress < 0 || progress > 100) {
-          return 'Progress must be between 0 and 100';
+      case 'priority':
+      case 'difficulty':
+        const num = Number(value);
+        if (isNaN(num) || num < 0 || num > 5) {
+          return 'Value must be between 0 and 5';
         }
         break;
-      case 'start_time':
+      case 'deadline':
         const date = new Date(value);
         if (isNaN(date.getTime())) return 'Invalid date';
         if (isAfter(startOfDay(new Date()), startOfDay(date))) {
@@ -146,50 +107,29 @@ export default function TaskDetailsScreen() {
 
     try {
       setSaving(true);
-      setError(null);
-
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({ [field]: editedTask[field] })
-        .eq('id', task.id);
-
-      if (updateError) throw updateError;
-
-      setTask(prev => prev ? { ...prev, [field]: editedTask[field] } : null);
+      await updateTask(task.id, { [field]: editedTask[field] });
       setEditableFields(prev => ({ ...prev, [field]: false }));
     } catch (err: any) {
-      setError('Failed to update task: ' + err.message);
       Alert.alert('Error', 'Failed to update task. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleStatusChange = async (newStatus: Task['status']) => {
+  const handleStatusChange = async (newStatus: TaskStatus) => {
     if (!task) return;
 
     try {
       setSaving(true);
-      setError(null);
-
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({ status: newStatus })
-        .eq('id', task.id);
-
-      if (updateError) throw updateError;
-
-      setTask(prev => prev ? { ...prev, status: newStatus } : null);
-      setEditedTask(prev => ({ ...prev, status: newStatus }));
+      await updateTask(task.id, { status: newStatus });
     } catch (err: any) {
-      setError('Failed to update status: ' + err.message);
       Alert.alert('Error', 'Failed to update status. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color="#FF9F1C" />
@@ -291,77 +231,26 @@ export default function TaskDetailsScreen() {
           </View>
         </View>
 
-        <View style={styles.progressSection}>
-          {editableFields.progress ? (
-            <View style={styles.editableProgress}>
-              <TextInput
-                style={styles.progressInput}
-                value={String(editedTask.progress || 0)}
-                onChangeText={(value) => handleChange('progress', Number(value))}
-                keyboardType="numeric"
-                maxLength={3}
-              />
-              <Text style={styles.progressSymbol}>%</Text>
-              <View style={styles.editActions}>
-                <Pressable
-                  style={[styles.editButton, styles.cancelButton]}
-                  onPress={() => handleCancel('progress')}
-                  disabled={saving}
-                >
-                  <Ionicons name="close" size={20} color="#FF3B30" />
-                </Pressable>
-                <Pressable
-                  style={[styles.editButton, styles.saveButton]}
-                  onPress={() => handleSave('progress')}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable onPress={() => handleEdit('progress')}>
-              <AnimatedCircularProgress
-                size={120}
-                width={12}
-                fill={task.progress || 0}
-                tintColor={STATUS_COLORS[task.status]}
-                backgroundColor="#E2E2E2"
-                rotation={0}
-                lineCap="round"
-              >
-                {(fill) => (
-                  <Text style={styles.progressText}>{Math.round(fill)}%</Text>
-                )}
-              </AnimatedCircularProgress>
-            </Pressable>
-          )}
-        </View>
-
         <View style={styles.infoSection}>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={20} color="#8E8E93" />
-            {editableFields.start_time ? (
+            {editableFields.deadline ? (
               <View style={styles.editableDate}>
                 <DatePicker
-                  date={new Date(editedTask.start_time || task.start_time)}
-                  onDateChange={(date) => handleChange('start_time', date.toISOString())}
+                  date={new Date(editedTask.deadline || task.deadline || new Date())}
+                  onDateChange={(date) => handleChange('deadline', date.toISOString())}
                 />
                 <View style={styles.editActions}>
                   <Pressable
                     style={[styles.editButton, styles.cancelButton]}
-                    onPress={() => handleCancel('start_time')}
+                    onPress={() => handleCancel('deadline')}
                     disabled={saving}
                   >
                     <Ionicons name="close" size={20} color="#FF3B30" />
                   </Pressable>
                   <Pressable
                     style={[styles.editButton, styles.saveButton]}
-                    onPress={() => handleSave('start_time')}
+                    onPress={() => handleSave('deadline')}
                     disabled={saving}
                   >
                     {saving ? (
@@ -375,10 +264,10 @@ export default function TaskDetailsScreen() {
             ) : (
               <Pressable
                 style={styles.editableText}
-                onPress={() => handleEdit('start_time')}
+                onPress={() => handleEdit('deadline')}
               >
                 <Text style={styles.infoText}>
-                  {format(new Date(task.start_time), 'MMMM d, yyyy')}
+                  {task.deadline ? format(new Date(task.deadline), 'MMMM d, yyyy') : 'Set deadline'}
                 </Text>
                 <Ionicons name="pencil" size={20} color="#8E8E93" />
               </Pressable>
@@ -386,26 +275,27 @@ export default function TaskDetailsScreen() {
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="folder-outline" size={20} color="#8E8E93" />
-            {editableFields.type ? (
+            <Ionicons name="flag-outline" size={20} color="#8E8E93" />
+            {editableFields.priority ? (
               <View style={styles.editableField}>
                 <TextInput
                   style={styles.input}
-                  value={editedTask.type}
-                  onChangeText={(value) => handleChange('type', value)}
-                  placeholder="Task Type"
+                  value={String(editedTask.priority || '')}
+                  onChangeText={(value) => handleChange('priority', Number(value))}
+                  placeholder="Priority (0-5)"
+                  keyboardType="numeric"
                 />
                 <View style={styles.editActions}>
                   <Pressable
                     style={[styles.editButton, styles.cancelButton]}
-                    onPress={() => handleCancel('type')}
+                    onPress={() => handleCancel('priority')}
                     disabled={saving}
                   >
                     <Ionicons name="close" size={20} color="#FF3B30" />
                   </Pressable>
                   <Pressable
                     style={[styles.editButton, styles.saveButton]}
-                    onPress={() => handleSave('type')}
+                    onPress={() => handleSave('priority')}
                     disabled={saving}
                   >
                     {saving ? (
@@ -419,97 +309,60 @@ export default function TaskDetailsScreen() {
             ) : (
               <Pressable
                 style={styles.editableText}
-                onPress={() => handleEdit('type')}
+                onPress={() => handleEdit('priority')}
               >
-                <Text style={styles.infoText}>{task.type}</Text>
+                <Text style={styles.infoText}>
+                  Priority: {task.priority !== null ? task.priority : 'Not set'}
+                </Text>
                 <Ionicons name="pencil" size={20} color="#8E8E93" />
               </Pressable>
             )}
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="notifications-outline" size={20} color="#8E8E93" />
-            <Pressable
-              style={styles.toggleContainer}
-              onPress={async () => {
-                try {
-                  setSaving(true);
-                  const newValue = !task.alert_enabled;
-                  
-                  const { error: updateError } = await supabase
-                    .from('tasks')
-                    .update({ alert_enabled: newValue })
-                    .eq('id', task.id);
-
-                  if (updateError) throw updateError;
-
-                  setTask(prev => prev ? { ...prev, alert_enabled: newValue } : null);
-                  setEditedTask(prev => ({ ...prev, alert_enabled: newValue }));
-                } catch (err: any) {
-                  Alert.alert('Error', 'Failed to update alert settings');
-                } finally {
-                  setSaving(false);
-                }
-              }}
-            >
-              <Text style={styles.infoText}>Alerts</Text>
-              <View style={[styles.toggle, task.alert_enabled && styles.toggleActive]}>
-                <View style={[styles.toggleHandle, task.alert_enabled && styles.toggleHandleActive]} />
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.tagsSection}>
-          <Text style={styles.sectionTitle}>Tags</Text>
-          {editableFields.tags ? (
-            <View style={styles.editableField}>
-              <TextInput
-                style={styles.input}
-                value={editedTask.tags?.join(', ')}
-                onChangeText={(value) => handleChange('tags', value.split(',').map(tag => tag.trim()).filter(Boolean))}
-                placeholder="Enter tags (comma-separated)"
-              />
-              <View style={styles.editActions}>
-                <Pressable
-                  style={[styles.editButton, styles.cancelButton]}
-                  onPress={() => handleCancel('tags')}
-                  disabled={saving}
-                >
-                  <Ionicons name="close" size={20} color="#FF3B30" />
-                </Pressable>
-                <Pressable
-                  style={[styles.editButton, styles.saveButton]}
-                  onPress={() => handleSave('tags')}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="checkmark" size={20} color="#fff" />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              style={[styles.tagsList, styles.editableText]}
-              onPress={() => handleEdit('tags')}
-            >
-              {task.tags && task.tags.length > 0 ? (
-                <View style={styles.tagsWrapper}>
-                  {task.tags.map((tag, index) => (
-                    <View key={index} style={styles.tag}>
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </View>
-                  ))}
+            <Ionicons name="trending-up-outline" size={20} color="#8E8E93" />
+            {editableFields.difficulty ? (
+              <View style={styles.editableField}>
+                <TextInput
+                  style={styles.input}
+                  value={String(editedTask.difficulty || '')}
+                  onChangeText={(value) => handleChange('difficulty', Number(value))}
+                  placeholder="Difficulty (0-5)"
+                  keyboardType="numeric"
+                />
+                <View style={styles.editActions}>
+                  <Pressable
+                    style={[styles.editButton, styles.cancelButton]}
+                    onPress={() => handleCancel('difficulty')}
+                    disabled={saving}
+                  >
+                    <Ionicons name="close" size={20} color="#FF3B30" />
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editButton, styles.saveButton]}
+                    onPress={() => handleSave('difficulty')}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    )}
+                  </Pressable>
                 </View>
-              ) : (
-                <Text style={styles.placeholderText}>Add tags</Text>
-              )}
-              <Ionicons name="pencil" size={20} color="#8E8E93" />
-            </Pressable>
-          )}
+              </View>
+            ) : (
+              <Pressable
+                style={styles.editableText}
+                onPress={() => handleEdit('difficulty')}
+              >
+                <Text style={styles.infoText}>
+                  Difficulty: {task.difficulty !== null ? task.difficulty : 'Not set'}
+                </Text>
+                <Ionicons name="pencil" size={20} color="#8E8E93" />
+              </Pressable>
+            )}
+          </View>
         </View>
 
         <View style={styles.descriptionSection}>
@@ -518,7 +371,7 @@ export default function TaskDetailsScreen() {
             <View style={styles.editableField}>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                value={editedTask.description}
+                value={editedTask.description || ''}
                 onChangeText={(value) => handleChange('description', value)}
                 placeholder="Add description"
                 multiline
@@ -630,35 +483,6 @@ const styles = StyleSheet.create({
   statusButton: {
     padding: 8,
   },
-  progressSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  progressText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-  },
-  editableProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-  },
-  progressInput: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    width: 60,
-    textAlign: 'right',
-  },
-  progressSymbol: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginLeft: 4,
-  },
   infoSection: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -726,72 +550,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
-  toggleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginLeft: 12,
-  },
-  toggle: {
-    width: 51,
-    height: 31,
-    borderRadius: 15.5,
-    backgroundColor: '#E5E5EA',
-    padding: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#34C759',
-  },
-  toggleHandle: {
-    width: 27,
-    height: 27,
-    borderRadius: 13.5,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  toggleHandleActive: {
-    transform: [{ translateX: 20 }],
-  },
-  tagsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 12,
-  },
-  tagsWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tagsList: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  tag: {
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  tagText: {
-    fontSize: 14,
-    color: '#1C1C1E',
-  },
   descriptionSection: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -826,5 +584,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 12,
   },
 });

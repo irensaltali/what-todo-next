@@ -5,14 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/data/supabase';
 import { format, isAfter, startOfDay, differenceInDays, addDays, formatDistance } from 'date-fns';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { DatePicker } from '@/components/DatePicker';
-import { StatusBar } from '@/components/StatusBar';
 import { Task } from '@/lib/store/models/task';
 import { calculatePriorityScore } from '@/lib/utils/priority';
 import { useTaskEntry } from '@/contexts/TaskEntryContext';
 import { getUserTasks, updateTask, hardDeleteTask } from '@/data/taskService';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { Task as ServiceTask } from '@/data/taskService';
 
 interface EditableFields {
