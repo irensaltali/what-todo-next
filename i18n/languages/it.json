@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "Sfoglia Liste"
+    "title": "Sfoglia Liste",
+    "tabs": {
+      "today": "Oggi",
+      "all": "Tutte le Attività",
+      "completed": "Completate",
+      "tomorrow": "Domani",
+      "week": "Questa Settimana"
+    }
   }
 } 

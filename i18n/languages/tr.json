@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "Listeleri Gözat"
+    "title": "Listeleri Gözat",
+    "tabs": {
+      "today": "Bugün",
+      "all": "Tüm Görevler",
+      "completed": "Tamamlananlar",
+      "tomorrow": "Yarın",
+      "week": "Bu Hafta"
+    }
   }
 }

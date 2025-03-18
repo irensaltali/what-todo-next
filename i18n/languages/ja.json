@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "リストをブラウズ"
+    "title": "リストをブラウズ",
+    "tabs": {
+      "today": "今日",
+      "all": "すべてのタスク",
+      "completed": "完了済み",
+      "tomorrow": "明日",
+      "week": "今週"
+    }
   }
 } 

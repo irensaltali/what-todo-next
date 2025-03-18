@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "浏览列表"
+    "title": "浏览列表",
+    "tabs": {
+      "today": "今天",
+      "all": "所有任务",
+      "completed": "已完成",
+      "tomorrow": "明天",
+      "week": "本周"
+    }
   }
 } 

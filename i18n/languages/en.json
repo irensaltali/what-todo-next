@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "Browse Lists"
+    "title": "Browse Lists",
+    "tabs": {
+      "today": "Today",
+      "all": "All Tasks",
+      "completed": "Completed",
+      "tomorrow": "Tomorrow",
+      "week": "This Week"
+    }
   }
 }

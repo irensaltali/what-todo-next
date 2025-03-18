@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "Explorar Listas"
+    "title": "Explorar Listas",
+    "tabs": {
+      "today": "Hoy",
+      "all": "Todas las Tareas",
+      "completed": "Completadas",
+      "tomorrow": "Mañana",
+      "week": "Esta Semana"
+    }
   }
 } 

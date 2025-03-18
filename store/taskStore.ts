@@ -68,6 +68,13 @@ interface TaskState {
   toggleTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
   clearTasks: () => Promise<void>;
 
+  // New Filter Actions
+  getTasksByDate: (date: Date) => Promise<Task[]>;
+  getTasksByDateRange: (startDate: Date, endDate: Date) => Promise<Task[]>;
+  getTasksByList: (listId: string) => Promise<Task[]>;
+  getCompletedTasks: () => Promise<Task[]>;
+  getTasksByWeek: (date: Date) => Promise<Task[]>;
+
   // Tag Actions
   fetchTags: () => Promise<void>;
   addTag: (tag: Omit<Tag, 'id' | 'created_at'>) => Promise<void>;
@@ -718,6 +725,179 @@ export const useTaskStore = create<TaskState>()(
       setDebug: (isDebug: boolean) => {
         debugLog('Setting debug mode', { isDebug });
         set({ isDebug });
+      },
+
+      // New Filter Actions Implementation
+      getTasksByDate: async (date: Date) => {
+        const { setLoading, setError } = get();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('No authenticated user');
+          }
+
+          const startOfDay = new Date(date);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(date);
+          endOfDay.setHours(23, 59, 59, 999);
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_deleted', false)
+            .gte('deadline', startOfDay.toISOString())
+            .lte('deadline', endOfDay.toISOString())
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          return data || [];
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks by date';
+          setError(errorMessage);
+          return [];
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      getTasksByDateRange: async (startDate: Date, endDate: Date) => {
+        const { setLoading, setError } = get();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('No authenticated user');
+          }
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_deleted', false)
+            .gte('deadline', startDate.toISOString())
+            .lte('deadline', endDate.toISOString())
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          return data || [];
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks by date range';
+          setError(errorMessage);
+          return [];
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      getTasksByList: async (listId: string) => {
+        const { setLoading, setError } = get();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('No authenticated user');
+          }
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*, task_lists!inner(*)')
+            .eq('user_id', user.id)
+            .eq('is_deleted', false)
+            .eq('task_lists.list_id', listId)
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          return data || [];
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks by list';
+          setError(errorMessage);
+          return [];
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      getCompletedTasks: async () => {
+        const { setLoading, setError } = get();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('No authenticated user');
+          }
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_deleted', false)
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          return data || [];
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch completed tasks';
+          setError(errorMessage);
+          return [];
+        } finally {
+          setLoading(false);
+        }
+      },
+
+      getTasksByWeek: async (date: Date) => {
+        const { setLoading, setError } = get();
+        setLoading(true);
+        setError(null);
+
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error('No authenticated user');
+          }
+
+          // Get start and end of the week
+          const startOfWeek = new Date(date);
+          startOfWeek.setDate(date.getDate() - date.getDay());
+          startOfWeek.setHours(0, 0, 0, 0);
+
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 6);
+          endOfWeek.setHours(23, 59, 59, 999);
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_deleted', false)
+            .gte('deadline', startOfWeek.toISOString())
+            .lte('deadline', endOfWeek.toISOString())
+            .order('created_at', { ascending: false });
+
+          if (error) throw error;
+
+          return data || [];
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks by week';
+          setError(errorMessage);
+          return [];
+        } finally {
+          setLoading(false);
+        }
       },
     }),
     {

@@ -61,6 +61,13 @@
   },
   
   "browse": {
-    "title": "목록 찾아보기"
+    "title": "목록 찾아보기",
+    "tabs": {
+      "today": "오늘",
+      "all": "모든 작업",
+      "completed": "완료됨",
+      "tomorrow": "내일",
+      "week": "이번 주"
+    }
   }
 } 
