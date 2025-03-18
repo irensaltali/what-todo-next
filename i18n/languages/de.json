@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Listen durchsuchen",
+    "categories": {
+      "all": "Alle Aufgaben",
+      "ongoing": "Laufend",
+      "inprogress": "In Bearbeitung",
+      "completed": "Abgeschlossen"
+    },
     "tabs": {
       "today": "Heute",
       "all": "Alle Aufgaben",

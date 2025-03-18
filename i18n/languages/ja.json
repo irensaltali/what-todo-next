@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "リストをブラウズ",
+    "categories": {
+      "all": "すべてのタスク",
+      "ongoing": "進行中",
+      "inprogress": "処理中",
+      "completed": "完了済み"
+    },
     "tabs": {
       "today": "今日",
       "all": "すべてのタスク",

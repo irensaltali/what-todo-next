@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Browse Lists",
+    "categories": {
+      "all": "All Tasks",
+      "ongoing": "Ongoing",
+      "inprogress": "In Progress",
+      "completed": "Completed"
+    },
     "tabs": {
       "today": "Today",
       "all": "All Tasks",

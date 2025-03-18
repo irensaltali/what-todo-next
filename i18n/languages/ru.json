@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Обзор списков",
+    "categories": {
+      "all": "Все задачи",
+      "ongoing": "В процессе",
+      "inprogress": "В работе",
+      "completed": "Завершённые"
+    },
     "tabs": {
       "today": "Сегодня",
       "all": "Все задачи",

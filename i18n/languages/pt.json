@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Explorar Listas",
+    "categories": {
+      "all": "Todas as Tarefas",
+      "ongoing": "Em Andamento",
+      "inprogress": "Em Processamento",
+      "completed": "Concluídas"
+    },
     "tabs": {
       "today": "Hoje",
       "all": "Todas as Tarefas",

@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Explorar Listas",
+    "categories": {
+      "all": "Todas las Tareas",
+      "ongoing": "En Curso",
+      "inprogress": "En Proceso",
+      "completed": "Completadas"
+    },
     "tabs": {
       "today": "Hoy",
       "all": "Todas las Tareas",

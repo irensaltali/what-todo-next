@@ -8,6 +8,13 @@ export interface TaskListStyles {
   header: ViewStyle;
   title: TextStyle;
   
+  // Tabs
+  tabsContainer: ViewStyle;
+  tabsContent: ViewStyle;
+  tab: ViewStyle;
+  tabText: TextStyle;
+  content: ViewStyle;
+  
   // List sections
   section: ViewStyle;
   listHeader: ViewStyle;
@@ -35,7 +42,7 @@ export interface TaskListStyles {
   emptyStateText: TextStyle;
   emptyStateHint: TextStyle;
   emptyListContainer: ViewStyle;
-  loader: ViewStyle;
+  loadingContainer: ViewStyle;
 }
 
 // Create task list styles
@@ -56,6 +63,33 @@ export const taskListStyles = StyleSheet.create<TaskListStyles>({
     fontSize: 30,
     fontWeight: theme.typography.fontWeight.bold as any,
     color: theme.colors.text.primary,
+  },
+  
+  // Tabs
+  tabsContainer: {
+    maxHeight: 60,
+  },
+  tabsContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+  },
+  tabText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  content: {
+    flex: 1,
+    padding: 16,
   },
   
   // List sections
@@ -164,7 +198,9 @@ export const taskListStyles = StyleSheet.create<TaskListStyles>({
     alignItems: 'center',
     minHeight: '100%', // Ensure it fills the whole screen
   },
-  loader: {
-    padding: theme.spacing.lg,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 }); 

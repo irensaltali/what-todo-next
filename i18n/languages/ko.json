@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "목록 찾아보기",
+    "categories": {
+      "all": "모든 작업",
+      "ongoing": "진행 중",
+      "inprogress": "처리 중",
+      "completed": "완료됨"
+    },
     "tabs": {
       "today": "오늘",
       "all": "모든 작업",

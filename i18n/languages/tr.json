@@ -62,6 +62,12 @@
   
   "browse": {
     "title": "Listeleri Gözat",
+    "categories": {
+      "all": "Tüm Görevler",
+      "ongoing": "Devam Eden",
+      "inprogress": "İşlemde",
+      "completed": "Tamamlanan"
+    },
     "tabs": {
       "today": "Bugün",
       "all": "Tüm Görevler",
