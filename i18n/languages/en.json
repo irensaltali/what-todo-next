@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Home",
     "tasks": "Tasks",
+    "browse": "Browse",
     "profile": "Profile"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Delete",
     "pull_to_refresh": "Pull down to refresh",
     "refreshing": "Refreshing..."
+  },
+  
+  "browse": {
+    "title": "Browse Lists"
   }
 }

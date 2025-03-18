@@ -10,6 +10,7 @@ export interface LayoutStyles {
   // Tab styles
   tabBarStyle: ViewStyle;
   tabBarItemStyle: ViewStyle;
+  tabBarLabelStyle: TextStyle;
   
   // Add Button styles
   addButton: ViewStyle;
@@ -42,6 +43,10 @@ export const layoutStyles = StyleSheet.create<LayoutStyles>({
   },
   tabBarItemStyle: {
     paddingVertical: theme.spacing.xs,
+  },
+  tabBarLabelStyle: {
+    fontSize: 10,
+    marginTop: 2,
   },
   
   // Add Button styles

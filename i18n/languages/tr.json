@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Ana Sayfa",
     "tasks": "Görevler",
+    "browse": "Gözat",
     "profile": "Profil"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Sil",
     "pull_to_refresh": "Yenilemek için aşağı çekin",
     "refreshing": "Yenileniyor..."
+  },
+  
+  "browse": {
+    "title": "Listeleri Gözat"
   }
 }

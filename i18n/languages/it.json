@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Home",
     "tasks": "Attività",
+    "browse": "Sfoglia",
     "profile": "Profilo"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Elimina",
     "pull_to_refresh": "Trascina verso il basso per aggiornare",
     "refreshing": "Aggiornamento..."
+  },
+  
+  "browse": {
+    "title": "Sfoglia Liste"
   }
 } 

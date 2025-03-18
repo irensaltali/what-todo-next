@@ -32,8 +32,8 @@ export default function TabLayout() {
         tabBarStyle: layoutStyles.tabBarStyle,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.text.placeholder,
-        tabBarShowLabel: false,
         tabBarItemStyle: layoutStyles.tabBarItemStyle,
+        tabBarLabelStyle: layoutStyles.tabBarLabelStyle,
       }}>
       <Tabs.Screen
         name="index"
@@ -50,6 +50,15 @@ export default function TabLayout() {
           title: t('tabs.tasks'),
           tabBarIcon: ({ size, color }) => (
             <Ionicons name="list-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="browse"
+        options={{
+          title: t('tabs.browse'),
+          tabBarIcon: ({ size, color }) => (
+            <Ionicons name="grid-outline" size={size} color={color} />
           ),
         }}
       />

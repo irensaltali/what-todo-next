@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Accueil",
     "tasks": "Tâches",
+    "browse": "Parcourir",
     "profile": "Profil"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Supprimer",
     "pull_to_refresh": "Tirez vers le bas pour actualiser",
     "refreshing": "Actualisation..."
+  },
+  
+  "browse": {
+    "title": "Parcourir les Listes"
   }
 } 

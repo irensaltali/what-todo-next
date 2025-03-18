@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Startseite",
     "tasks": "Aufgaben",
+    "browse": "Durchsuchen",
     "profile": "Profil"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Löschen",
     "pull_to_refresh": "Nach unten ziehen zum Aktualisieren",
     "refreshing": "Aktualisiere..."
+  },
+  
+  "browse": {
+    "title": "Listen durchsuchen"
   }
 } 

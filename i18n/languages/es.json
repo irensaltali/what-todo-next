@@ -46,6 +46,7 @@
   "tabs": {
     "home": "Inicio",
     "tasks": "Tareas",
+    "browse": "Explorar",
     "profile": "Perfil"
   },
   
@@ -57,5 +58,9 @@
     "delete": "Eliminar",
     "pull_to_refresh": "Desliza hacia abajo para actualizar",
     "refreshing": "Actualizando..."
+  },
+  
+  "browse": {
+    "title": "Explorar Listas"
   }
 } 

@@ -46,6 +46,7 @@
   "tabs": {
     "home": "홈",
     "tasks": "작업",
+    "browse": "찾아보기",
     "profile": "프로필"
   },
   
@@ -57,5 +58,9 @@
     "delete": "삭제",
     "pull_to_refresh": "아래로 당겨 새로고침",
     "refreshing": "새로고침 중..."
+  },
+  
+  "browse": {
+    "title": "목록 찾아보기"
   }
 } 
