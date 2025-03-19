@@ -51,24 +51,23 @@ export default function TasksScreen() {
 
       switch (selectedTab) {
         case 'today':
-          loadedTasks = await taskStore.getTasksByDate(today);
+          loadedTasks = await taskStore.filterTasks({ date: today });
           break;
         case 'all':
-          await taskStore.fetchTasks();
-          loadedTasks = taskStore.tasks;
+          loadedTasks = await taskStore.filterTasks({ status: 'ongoing' });
           break;
         case 'completed':
-          loadedTasks = await taskStore.getCompletedTasks();
+          loadedTasks = await taskStore.filterTasks({ status: 'completed' });
           break;
         case 'tomorrow':
-          loadedTasks = await taskStore.getTasksByDate(tomorrow);
+          loadedTasks = await taskStore.filterTasks({ date: tomorrow });
           break;
         case 'week':
-          loadedTasks = await taskStore.getTasksByWeek(today);
+          loadedTasks = await taskStore.filterTasks({ weekOf: today });
           break;
         default:
           // If it's a list ID, fetch tasks for that list
-          loadedTasks = await taskStore.getTasksByList(selectedTab);
+          loadedTasks = await taskStore.filterTasks({ listId: selectedTab });
       }
       setTasks(loadedTasks);
     } catch (error) {
