@@ -39,8 +39,7 @@ export default function BrowseScreen() {
   const loadCategories = async () => {
     setIsLoading(true);
     try {
-      await taskStore.fetchTasks();
-      const tasks = taskStore.tasks;
+      const tasks = await taskStore.filterTasks({});
       
       // Calculate task counts for each category
       const categoryCounts = tasks.reduce((acc: Record<string, number>, task: Task) => {
