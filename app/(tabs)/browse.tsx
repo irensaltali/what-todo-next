@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../lib/styles/useTheme';
 import { useTaskStore, Task } from '../../store/taskStore';
 import { layoutStyles } from '../../lib/styles/layout';
 import { browseStyles } from '../../lib/styles/browse';
@@ -27,7 +26,6 @@ interface CategoryCard {
 
 export default function BrowseScreen() {
   const { t } = useTranslation();
-  const theme = useTheme();
   const taskStore = useTaskStore();
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryCard[]>([]);
@@ -55,7 +53,7 @@ export default function BrowseScreen() {
           id: 'all',
           title: t('browse.categories.all'),
           icon: 'grid-outline',
-          color: theme.colors.primary,
+          color: '#007AFF',
           count: tasks.length,
         },
         {
@@ -119,15 +117,15 @@ export default function BrowseScreen() {
   if (isLoading) {
     return (
       <View style={browseStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[browseStyles.container, { backgroundColor: theme.colors.background.primary }]}>
+    <SafeAreaView style={[browseStyles.container, { backgroundColor: '#FFFFFF' }]}>
       <View style={browseStyles.header}>
-        <Text style={[browseStyles.title, { color: theme.colors.text.primary }]}>
+        <Text style={[browseStyles.title, { color: '#000000' }]}>
           {t('browse.title')}
         </Text>
       </View>

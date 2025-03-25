@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../lib/styles/useTheme';
 import { useTaskStore, Task, TaskStatus } from '../../store/taskStore';
 import { TaskList } from '../../components/TaskList';
 import { layoutStyles } from '../../lib/styles/layout';
@@ -23,7 +22,6 @@ interface Tab {
 
 export default function TasksScreen() {
   const { t } = useTranslation();
-  const theme = useTheme();
   const taskStore = useTaskStore();
   const [selectedTab, setSelectedTab] = useState('today');
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -81,7 +79,7 @@ export default function TasksScreen() {
     if (isLoading) {
       return (
         <View style={taskListStyles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color="#007AFF" />
         </View>
       );
     }
@@ -100,9 +98,9 @@ export default function TasksScreen() {
   };
 
   return (
-    <SafeAreaView style={[taskListStyles.container, { backgroundColor: theme.colors.background.primary }]}>
+    <SafeAreaView style={[taskListStyles.container, { backgroundColor: '#FFFFFF' }]}>
       <View style={taskListStyles.header}>
-        <Text style={[taskListStyles.title, { color: theme.colors.text.primary }]}>
+        <Text style={[taskListStyles.title, { color: '#000000' }]}>
           {t('task_list.title')}
         </Text>
       </View>
@@ -118,14 +116,14 @@ export default function TasksScreen() {
             key={tab.id}
             style={[
               taskListStyles.tab,
-              selectedTab === tab.id && { backgroundColor: theme.colors.primary },
+              selectedTab === tab.id && { backgroundColor: '#007AFF' },
             ]}
             onPress={() => setSelectedTab(tab.id)}
           >
             <Ionicons
               name={tab.icon as any}
               size={24}
-              color={selectedTab === tab.id ? '#FFFFFF' : theme.colors.text.primary}
+              color={selectedTab === tab.id ? '#FFFFFF' : '#000000'}
             />
             <Text
               style={[
