@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,105 +13,119 @@ import {
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/data/supabase';
-import { getAvatarUrl } from '@/lib/avatarUrl';
+import useProfileStore from '@/store/profileStore';
 import { ImageEditor } from '@/components/ImageEditor';
 import { uploadAvatar } from '@/lib/avatar';
 import { StatusBar } from '@/components/StatusBar';
-import useProfileStore from '@/store/profileStore';
-
-interface Profile {
-  id: string;
-  name: string | null;
-  avatar_url: string | null;
-}
 
 export default function EditProfileScreen() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { profile, loading: storeLoading, error: storeError, loadProfile, updateProfile, getAvatarUrl, getCurrentUser, setLoading, setError } = useProfileStore();
   const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLocalLoading] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [error, setLocalError] = useState<string | null>(null);
+  const [originalName, setOriginalName] = useState<string | null>(null);
+
+  // Check if there are any changes to save
+  const hasChanges = useMemo(() => {
+    // If we don't have the original profile loaded yet, no changes
+    if (originalName === null) return false;
+    
+    // Check if name has changed
+    return name.trim() !== originalName;
+  }, [name, originalName]);
 
   useEffect(() => {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    // Update form when profile changes and store original values
+    if (profile && profile.name !== undefined) {
+      setName(profile.name || '');
+      setOriginalName(profile.name || '');
+    }
+  }, [profile]);
+
   const fetchProfile = async () => {
     try {
-      const user = await useProfileStore.getState().getCurrentUser();
+      const user = await getCurrentUser();
       if (!user) return;
 
-      setUserEmail(user.email || null);
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-      setName(data.name || '');
+      await loadProfile(user.id);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
   };
 
   const handleSave = async () => {
-    if (!profile) return;
+    if (!profile || !profile.id || !hasChanges) return;
 
     try {
+      setLocalLoading(true);
+      setLocalError(null);
       setLoading(true);
-      setError(null);
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ name: name.trim() })
-        .eq('id', profile.id);
-
-      if (updateError) throw updateError;
-
+      // Update profile using store method
+      await updateProfile({ name: name.trim() });
+      
       router.back();
     } catch (err: any) {
-      setError('Failed to update profile');
+      const errorMessage = 'Failed to update profile';
+      setLocalError(errorMessage);
+      setError(errorMessage);
       Alert.alert('Error', 'Failed to update profile. Please try again.');
     } finally {
+      setLocalLoading(false);
       setLoading(false);
     }
   };
 
   const handleUpdateAvatar = async (uri: string) => {
-    if (!profile) return;
+    if (!profile || !profile.id) return;
 
     try {
+      setLocalLoading(true);
+      setLocalError(null);
       setLoading(true);
-      setError(null);
 
-      const user = await useProfileStore.getState().getCurrentUser();
+      const user = await getCurrentUser();
       if (!user) throw new Error('No user found');
 
       // Upload avatar and get public URL
       const publicUrl = await uploadAvatar(uri, user.id);
 
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      // Refresh profile data
-      await fetchProfile();
+      // Update profile avatar using store method
+      await updateProfile({ avatar_url: publicUrl });
+      
       setShowImageEditor(false);
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to update avatar';
+      setLocalError(errorMessage);
       setError(errorMessage);
       Alert.alert('Error', errorMessage);
     } finally {
+      setLocalLoading(false);
       setLoading(false);
     }
+  };
+
+  // Render the right header button based on state
+  const renderHeaderRight = () => {
+    if (loading || storeLoading) {
+      return <ActivityIndicator size="small" color="#FF6B00" />;
+    }
+    
+    if (!hasChanges) {
+      // Return empty component when no changes
+      return null;
+    }
+    
+    return (
+      <Pressable style={styles.headerButton} onPress={handleSave}>
+        <Text style={styles.saveButton}>Save</Text>
+      </Pressable>
+    );
   };
 
   return (
@@ -127,25 +141,13 @@ export default function EditProfileScreen() {
               <Ionicons name="close" size={24} color="#1C1C1E" />
             </Pressable>
           ),
-          headerRight: () => (
-            <Pressable
-              style={styles.headerButton}
-              onPress={handleSave}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FF6B00" />
-              ) : (
-                <Text style={styles.saveButton}>Save</Text>
-              )}
-            </Pressable>
-          ),
+          headerRight: () => renderHeaderRight(),
         }}
       />
 
-      {error && (
+      {(error || storeError) && (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{error || storeError}</Text>
         </View>
       )}
 
@@ -153,10 +155,10 @@ export default function EditProfileScreen() {
         <Pressable 
           style={styles.avatarContainer}
           onPress={() => setShowImageEditor(true)}
-          disabled={loading}
+          disabled={loading || storeLoading}
         >
           <Image
-            source={{ uri: getAvatarUrl(profile?.avatar_url) }}
+            source={{ uri: getAvatarUrl() || '' }}
             style={styles.avatar}
           />
           <View style={styles.editBadge}>
@@ -184,7 +186,7 @@ export default function EditProfileScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <View style={styles.emailContainer}>
-              <Text style={styles.emailText}>{userEmail || 'Loading...'}</Text>
+              <Text style={styles.emailText}>{profile.email || 'Loading...'}</Text>
             </View>
           </View>
         </View>
@@ -192,7 +194,7 @@ export default function EditProfileScreen() {
 
       <ImageEditor
         visible={showImageEditor}
-        currentImage={profile?.avatar_url ? getAvatarUrl(profile.avatar_url) : null}
+        currentImage={getAvatarUrl() || ''}
         onImageSelect={handleUpdateAvatar}
         onCancel={() => setShowImageEditor(false)}
       />

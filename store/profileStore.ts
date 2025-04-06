@@ -64,6 +64,7 @@ const useProfileStore = create<ProfileState>()(
             id: null,
             name: null,
             avatar_url: null,
+            email: null,
             created_at: null,
             updated_at: null,
         },
@@ -114,6 +115,7 @@ const useProfileStore = create<ProfileState>()(
                     id: null,
                     name: null,
                     avatar_url: null,
+                    email: null,
                     created_at: null,
                     updated_at: null,
                 },
@@ -125,6 +127,10 @@ const useProfileStore = create<ProfileState>()(
             try {
                 debug('Loading profile', { userId });
                 set({ loading: true, error: null });
+                
+                // Get user for email
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError) throw userError;
                 
                 const { data, error } = await supabase
                     .from('profiles')
@@ -138,9 +144,13 @@ const useProfileStore = create<ProfileState>()(
                 
                 if (data) {
                     const profileData = data as Profile;
+                    // Add email from authentication
+                    profileData.email = user?.email || null;
+                    
                     debug('Profile loaded successfully', { 
                         profileId: profileData.id,
-                        name: profileData.name 
+                        name: profileData.name,
+                        email: profileData.email
                     });
                     
                     // Check if avatar has changed before updating cache
