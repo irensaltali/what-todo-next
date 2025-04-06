@@ -24,13 +24,13 @@ export default function ProfileLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: theme.colors.background.primary,
+          backgroundColor: '#FFFFFF'
         },
         headerShadowVisible: false,
         headerTitleStyle: {
           fontSize: typography.fontSize.md,
           fontWeight: '600',
-          color: theme.colors.text.primary,
+          color: '#000000'
         },
         headerTitleAlign: 'center',
         headerBackTitle: '',

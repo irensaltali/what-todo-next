@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -79,8 +79,8 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
           try {
             const response = await fetch(uri);
             const blob = await response.blob();
-            if (blob.size > 5 * 1024 * 1024) {
-              throw new Error('Image size must be less than 5MB');
+            if (blob.size > 2 * 1024 * 1024) {
+              throw new Error('Image size must be less than 2MB');
             }
           } catch (err) {
             throw new Error('Failed to process image. Please try a different one.');
@@ -129,86 +129,88 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
       animationType="slide"
       onRequestClose={onCancel}
     >
-      <View style={imageEditorStyles.container}>
-        <View style={imageEditorStyles.header}>
-          <Text style={imageEditorStyles.title}>Edit Profile Picture</Text>
-          <Pressable style={imageEditorStyles.closeButton} onPress={onCancel}>
-            <Ionicons name="close" size={24} color={imageEditorColors.text} />
-          </Pressable>
-        </View>
-
-        {error && (
-          <View style={imageEditorStyles.errorContainer}>
-            <Text style={imageEditorStyles.errorText}>{error}</Text>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={imageEditorStyles.container}>
+          <View style={imageEditorStyles.header}>
+            <Text style={imageEditorStyles.title}>Edit Profile Picture</Text>
+            <Pressable style={imageEditorStyles.closeButton} onPress={onCancel}>
+              <Ionicons name="close" size={24} color={imageEditorColors.text} />
+            </Pressable>
           </View>
-        )}
 
-        <View style={imageEditorStyles.imageContainer}>
-          {image ? (
-            <GestureDetector gesture={composed}>
-              <Animated.View style={[imageEditorStyles.imageWrapper, animatedStyle]}>
-                <Image
-                  source={{ uri: image }}
-                  style={imageEditorStyles.image}
-                  accessibilityLabel="Profile picture preview"
-                />
-              </Animated.View>
-            </GestureDetector>
-          ) : (
-            <View style={imageEditorStyles.placeholder}>
-              <Ionicons name="person" size={64} color={imageEditorColors.subtleText} />
+          {error && (
+            <View style={imageEditorStyles.errorContainer}>
+              <Text style={imageEditorStyles.errorText}>{error}</Text>
             </View>
           )}
-        </View>
 
-        <View style={imageEditorStyles.controls}>
-          <Pressable
-            style={imageEditorStyles.button}
-            onPress={pickImage}
-            disabled={loading}>
-            <Ionicons name="image-outline" size={20} color={imageEditorColors.white} />
-            <Text style={imageEditorStyles.buttonText}>
-              {image ? 'Change Picture' : 'Select Picture'}
+          <View style={imageEditorStyles.imageContainer}>
+            {image ? (
+              <GestureDetector gesture={composed}>
+                <Animated.View style={[imageEditorStyles.imageWrapper, animatedStyle]}>
+                  <Image
+                    source={{ uri: image }}
+                    style={imageEditorStyles.image}
+                    accessibilityLabel="Profile picture preview"
+                  />
+                </Animated.View>
+              </GestureDetector>
+            ) : (
+              <View style={imageEditorStyles.placeholder}>
+                <Ionicons name="person" size={64} color={imageEditorColors.subtleText} />
+              </View>
+            )}
+          </View>
+
+          <View style={imageEditorStyles.controls}>
+            <Pressable
+              style={imageEditorStyles.button}
+              onPress={pickImage}
+              disabled={loading}>
+              <Ionicons name="image-outline" size={20} color={imageEditorColors.white} />
+              <Text style={imageEditorStyles.buttonText}>
+                {image ? 'Change Picture' : 'Select Picture'}
+              </Text>
+            </Pressable>
+
+            {image && (
+              <>
+                <Pressable
+                  style={[imageEditorStyles.button, imageEditorStyles.deleteButton]}
+                  onPress={() => setImage(null)}
+                  disabled={loading}>
+                  <Ionicons name="trash-outline" size={20} color={imageEditorColors.deleteText} />
+                  <Text style={[imageEditorStyles.buttonText, imageEditorStyles.deleteButtonText]}>
+                    Remove
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={imageEditorStyles.button}
+                  onPress={handleSave}
+                  disabled={loading}>
+                  {loading ? (
+                    <ActivityIndicator color={imageEditorColors.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={20} color={imageEditorColors.white} />
+                      <Text style={imageEditorStyles.buttonText}>Save</Text>
+                    </>
+                  )}
+                </Pressable>
+              </>
+            )}
+          </View>
+
+          <View style={imageEditorStyles.instructions}>
+            <Text style={imageEditorStyles.instructionText}>
+              • Supported formats: JPG, JPEG, PNG{'\n'}
+              • Maximum file size: 2MB{'\n'}
+              • Best results with square images
             </Text>
-          </Pressable>
-
-          {image && (
-            <>
-              <Pressable
-                style={[imageEditorStyles.button, imageEditorStyles.deleteButton]}
-                onPress={() => setImage(null)}
-                disabled={loading}>
-                <Ionicons name="trash-outline" size={20} color={imageEditorColors.deleteText} />
-                <Text style={[imageEditorStyles.buttonText, imageEditorStyles.deleteButtonText]}>
-                  Remove
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={imageEditorStyles.button}
-                onPress={handleSave}
-                disabled={loading}>
-                {loading ? (
-                  <ActivityIndicator color={imageEditorColors.white} />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark" size={20} color={imageEditorColors.white} />
-                    <Text style={imageEditorStyles.buttonText}>Save</Text>
-                  </>
-                )}
-              </Pressable>
-            </>
-          )}
+          </View>
         </View>
-
-        <View style={imageEditorStyles.instructions}>
-          <Text style={imageEditorStyles.instructionText}>
-            • Supported formats: JPG, PNG{'\n'}
-            • Maximum file size: 5MB{'\n'}
-            • Best results with square images
-          </Text>
-        </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

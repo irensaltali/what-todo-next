@@ -106,8 +106,9 @@ export default function EditProfileScreen() {
       await fetchProfile();
       setShowImageEditor(false);
     } catch (err: any) {
-      setError('Failed to update avatar');
-      Alert.alert('Error', 'Failed to update avatar. Please try again.');
+      const errorMessage = err.message || 'Failed to update avatar';
+      setError(errorMessage);
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

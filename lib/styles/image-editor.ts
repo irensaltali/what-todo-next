@@ -1,12 +1,11 @@
 import { StyleSheet, ViewStyle, TextStyle, ImageStyle } from 'react-native';
-import * as theme from './theme';
 
 // Color palette for the image editor
 export const imageEditorColors = {
   background: '#F2F2F7',
   surface: '#FFFFFF',
-  primary: '#FF6B00',
-  text: '#1C1C1E',
+  primary: '#007AFF',
+  text: '#000000',
   subtleText: '#8E8E93',
   error: '#FF3B30',
   white: '#FFFFFF',
