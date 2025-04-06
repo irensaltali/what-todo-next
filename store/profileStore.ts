@@ -208,23 +208,28 @@ const useProfileStore = create<ProfileState>()(
                 timestamp: new Date().toISOString()
             });
             
-            // Return cached avatar if available
+            // Always prefer the profile.avatar_url if it exists 
+            // This ensures we always get the latest avatar
+            if (profile.avatar_url) {
+                // If the avatar URL has changed from the cached one, update the cache
+                if (cachedAvatarUrl !== profile.avatar_url) {
+                    debug('Updating cached avatar URL', { 
+                        profileId: profile.id,
+                        oldCachedUrl: cachedAvatarUrl, 
+                        newUrl: profile.avatar_url 
+                    });
+                    set({ cachedAvatarUrl: profile.avatar_url });
+                }
+                return profile.avatar_url;
+            }
+            
+            // If no profile avatar but we have a cached one, use the cached one
             if (cachedAvatarUrl) {
                 debug('Using cached avatar URL', { 
                     profileId: profile.id,
                     cachedAvatarUrl 
                 });
                 return cachedAvatarUrl;
-            }
-            
-            // If no cached avatar but profile has one, cache and return it
-            if (profile.avatar_url) {
-                debug('Caching profile avatar URL', { 
-                    profileId: profile.id,
-                    newCachedUrl: profile.avatar_url 
-                });
-                set({ cachedAvatarUrl: profile.avatar_url });
-                return profile.avatar_url;
             }
             
             debug('No avatar URL available, will use default monster', { 

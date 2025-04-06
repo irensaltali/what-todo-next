@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { supabase } from '@/data/supabase';
 import useProfileStore from '@/store/profileStore';
 import { ImageEditor } from '@/components/ImageEditor';
 import { uploadAvatar } from '@/lib/avatar';
+import { getAvatarUrl as formatAvatarUrl, preloadImage } from '@/lib/avatarUrl';
 import { StatusBar } from '@/components/StatusBar';
 
 export default function EditProfileScreen() {
@@ -25,6 +26,35 @@ export default function EditProfileScreen() {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [error, setLocalError] = useState<string | null>(null);
   const [originalName, setOriginalName] = useState<string | null>(null);
+  const [avatarKey, setAvatarKey] = useState(Date.now());
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const [formattedAvatarUrl, setFormattedAvatarUrl] = useState('');
+
+  // Format and cache the avatar URL only when profile changes
+  useEffect(() => {
+    try {
+      const profileAvatarUrl = getAvatarUrl();
+      if (profileAvatarUrl) {
+        const formatted = formatAvatarUrl(profileAvatarUrl);
+        console.log('Setting formatted avatar URL:', formatted);
+        setFormattedAvatarUrl(formatted);
+        
+        // Attempt to preload the image
+        preloadImage(formatted).then(success => {
+          setImageLoadError(!success);
+          if (!success) {
+            console.warn('Failed to preload avatar image');
+          }
+        });
+      } else {
+        setFormattedAvatarUrl('');
+      }
+    } catch (e) {
+      console.error('Error formatting avatar URL:', e);
+      setFormattedAvatarUrl('');
+      setImageLoadError(true);
+    }
+  }, [profile.avatar_url, profile.updated_at]);
 
   // Check if there are any changes to save
   const hasChanges = useMemo(() => {
@@ -45,6 +75,11 @@ export default function EditProfileScreen() {
       setName(profile.name || '');
       setOriginalName(profile.name || '');
     }
+    
+    // Reset image load error state when profile changes
+    setImageLoadError(false);
+    // Force avatar refresh
+    setAvatarKey(Date.now());
   }, [profile]);
 
   const fetchProfile = async () => {
@@ -87,6 +122,7 @@ export default function EditProfileScreen() {
     try {
       setLocalLoading(true);
       setLocalError(null);
+      setImageLoadError(false);
       setLoading(true);
 
       const user = await getCurrentUser();
@@ -94,9 +130,24 @@ export default function EditProfileScreen() {
 
       // Upload avatar and get public URL
       const publicUrl = await uploadAvatar(uri, user.id);
+      console.log('Uploaded avatar URL:', publicUrl);
+
+      // Preload the image to make sure it's accessible
+      const preloadSuccess = await preloadImage(publicUrl);
+      if (!preloadSuccess) {
+        console.warn('Failed to preload image, but continuing anyway');
+      }
 
       // Update profile avatar using store method
       await updateProfile({ avatar_url: publicUrl });
+      
+      // Force reload the profile to ensure the avatar is updated
+      if (user.id) {
+        await loadProfile(user.id);
+      }
+      
+      // Force image cache refresh
+      setAvatarKey(Date.now());
       
       setShowImageEditor(false);
     } catch (err: any) {
@@ -126,6 +177,14 @@ export default function EditProfileScreen() {
         <Text style={styles.saveButton}>Save</Text>
       </Pressable>
     );
+  };
+
+  // Get avatar source with fallback
+  const getAvatarSource = () => {
+    if (imageLoadError || !formattedAvatarUrl) {
+      return require('@/assets/images/monsters/monster_1.png');
+    }
+    return { uri: formattedAvatarUrl };
   };
 
   return (
@@ -158,8 +217,13 @@ export default function EditProfileScreen() {
           disabled={loading || storeLoading}
         >
           <Image
-            source={{ uri: getAvatarUrl() || '' }}
+            source={getAvatarSource()}
             style={styles.avatar}
+            key={`avatar-${avatarKey}`}
+            onError={(error) => {
+              console.log('Error loading avatar image:', error.nativeEvent.error);
+              setImageLoadError(true);
+            }}
           />
           <View style={styles.editBadge}>
             <Ionicons name="camera" size={16} color="#fff" />
@@ -194,7 +258,7 @@ export default function EditProfileScreen() {
 
       <ImageEditor
         visible={showImageEditor}
-        currentImage={getAvatarUrl() || ''}
+        currentImage={getAvatarUrl() || null}
         onImageSelect={handleUpdateAvatar}
         onCancel={() => setShowImageEditor(false)}
       />

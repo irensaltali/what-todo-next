@@ -17,6 +17,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { imageEditorStyles, imageEditorColors } from '@/lib/styles/image-editor';
 
 interface ImageEditorProps {
@@ -30,6 +31,7 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
   const [image, setImage] = useState<string | null>(currentImage);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
@@ -128,10 +130,12 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
       visible={visible}
       animationType="slide"
       onRequestClose={onCancel}
+      statusBarTranslucent={true}
+      presentationStyle="pageSheet"
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={imageEditorStyles.container}>
-          <View style={imageEditorStyles.header}>
+          <View style={[imageEditorStyles.header, { paddingTop: insets.top > 0 ? insets.top : 16 }]}>
             <Text style={imageEditorStyles.title}>Edit Profile Picture</Text>
             <Pressable style={imageEditorStyles.closeButton} onPress={onCancel}>
               <Ionicons name="close" size={24} color={imageEditorColors.text} />
@@ -144,22 +148,24 @@ export function ImageEditor({ visible, currentImage, onImageSelect, onCancel }: 
             </View>
           )}
 
-          <View style={imageEditorStyles.imageContainer}>
-            {image ? (
-              <GestureDetector gesture={composed}>
-                <Animated.View style={[imageEditorStyles.imageWrapper, animatedStyle]}>
-                  <Image
-                    source={{ uri: image }}
-                    style={imageEditorStyles.image}
-                    accessibilityLabel="Profile picture preview"
-                  />
-                </Animated.View>
-              </GestureDetector>
-            ) : (
-              <View style={imageEditorStyles.placeholder}>
-                <Ionicons name="person" size={64} color={imageEditorColors.subtleText} />
-              </View>
-            )}
+          <View style={{ alignItems: 'center' }}>
+            <View style={imageEditorStyles.imageContainer}>
+              {image ? (
+                <GestureDetector gesture={composed}>
+                  <Animated.View style={[imageEditorStyles.imageWrapper, animatedStyle]}>
+                    <Image
+                      source={{ uri: image }}
+                      style={imageEditorStyles.image}
+                      accessibilityLabel="Profile picture preview"
+                    />
+                  </Animated.View>
+                </GestureDetector>
+              ) : (
+                <View style={imageEditorStyles.placeholder}>
+                  <Ionicons name="person" size={64} color={imageEditorColors.subtleText} />
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={imageEditorStyles.controls}>

@@ -56,32 +56,37 @@ export async function uploadAvatar(
     const timestamp = Date.now();
     const extension = fileType.split('/')[1];
     const fileName = `${userId}-${timestamp}.${extension}`;
+    const filePath = `${userId}/${fileName}`;
 
     // Remove existing avatar if any
-    const { data: existingFiles } = await supabase
-      .storage
-      .from(BUCKET_NAME)
-      .list(`${userId}`);
+    try {
+      const { data: existingFiles } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .list(`${userId}`);
 
-    if (existingFiles && existingFiles.length > 0) {
-      await Promise.all(
-        existingFiles.map(file => 
-          supabase
-            .storage
-            .from(BUCKET_NAME)
-            .remove([`${userId}/${file.name}`])
-        )
-      );
+      if (existingFiles && existingFiles.length > 0) {
+        await Promise.all(
+          existingFiles.map(file => 
+            supabase
+              .storage
+              .from(BUCKET_NAME)
+              .remove([`${userId}/${file.name}`])
+          )
+        );
+      }
+    } catch (error) {
+      console.log('No existing files to remove or no permission to list files');
     }
 
     // Upload new avatar
-    const { error: uploadError } = await supabase
+    const { error: uploadError, data } = await supabase
       .storage
       .from(BUCKET_NAME)
-      .upload(`${userId}/${fileName}`, fileData, {
+      .upload(filePath, fileData, {
         contentType: fileType,
         cacheControl: '3600',
-        upsert: false,
+        upsert: true, // Changed to true to overwrite if needed
       });
 
     if (uploadError) {
@@ -92,13 +97,19 @@ export async function uploadAvatar(
     const { data: { publicUrl } } = supabase
       .storage
       .from(BUCKET_NAME)
-      .getPublicUrl(`${userId}/${fileName}`);
+      .getPublicUrl(filePath);
 
+    if (!publicUrl) {
+      throw new AvatarUploadError('Failed to get public URL for avatar');
+    }
+
+    console.log('Avatar uploaded successfully:', publicUrl);
     return publicUrl;
   } catch (error) {
     if (error instanceof AvatarUploadError) {
       throw error;
     }
+    console.error('Avatar upload failed:', error);
     throw new AvatarUploadError('Failed to upload avatar. Please try again.');
   }
 }

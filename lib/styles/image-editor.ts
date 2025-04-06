@@ -48,12 +48,15 @@ export const imageEditorStyles = StyleSheet.create<ImageEditorStyles>({
   container: {
     flex: 1,
     backgroundColor: imageEditorColors.background,
+    width: '100%',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    width: '100%',
   },
   title: {
     fontSize: 20,
@@ -69,7 +72,8 @@ export const imageEditorStyles = StyleSheet.create<ImageEditorStyles>({
     justifyContent: 'center',
   },
   errorContainer: {
-    margin: 16,
+    marginVertical: 16,
+    marginHorizontal: 16,
     padding: 16,
     backgroundColor: imageEditorColors.errorBackground,
     borderRadius: 12,
@@ -82,12 +86,18 @@ export const imageEditorStyles = StyleSheet.create<ImageEditorStyles>({
   },
   imageContainer: {
     aspectRatio: 1,
-    margin: 16,
+    marginVertical: 20,
+    width: '85%',
     backgroundColor: imageEditorColors.surface,
     borderRadius: 16,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   imageWrapper: {
     width: '100%',
@@ -107,7 +117,9 @@ export const imageEditorStyles = StyleSheet.create<ImageEditorStyles>({
   controls: {
     flexDirection: 'row',
     gap: 12,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    width: '100%',
   },
   button: {
     flex: 1,
@@ -131,11 +143,14 @@ export const imageEditorStyles = StyleSheet.create<ImageEditorStyles>({
     color: imageEditorColors.deleteText,
   },
   instructions: {
-    padding: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    width: '100%',
   },
   instructionText: {
     fontSize: 14,
     color: imageEditorColors.subtleText,
     lineHeight: 20,
+    textAlign: 'center',
   },
 }); 
