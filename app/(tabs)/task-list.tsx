@@ -84,6 +84,17 @@ export default function TasksScreen() {
       );
     }
 
+    if (tasks.length === 0) {
+      return (
+        <View style={taskListStyles.emptyListContainer}>
+          <Text style={[
+            taskListStyles.emptyStateText]}>
+            {t('task_list.no_tasks', 'There is no task')}
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <TaskList
         tasks={tasks}
