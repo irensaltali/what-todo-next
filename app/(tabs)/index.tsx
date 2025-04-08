@@ -301,9 +301,11 @@ export default function HomeScreen() {
           ) : tasks.length === 0 ? (
             <Text style={homeStyles.emptyStateText}>{t('home.empty_tasks')}</Text>
           ) : (
-            tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))
+            tasks
+              .filter(task => task.status !== 'completed')
+              .map((task) => (
+                <TaskCard key={task.id} task={task} />
+              ))
           )}
         </View>
       </Animated.ScrollView>
